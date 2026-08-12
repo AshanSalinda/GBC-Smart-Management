@@ -1,10 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { Clock } from 'lucide-react';
 
+// MOCK DATA: Configured to demonstrate live transitions 5 seconds after page load!
 const MOCK_TABLES = [
-  { id: 1, type: 'Pro Pool', status: 'busy', player: 'Rahul Mehta', startTime: Date.now() - 25 * 60000, duration: 60 * 60000 },
-  { id: 2, type: 'Snooker', status: 'available', player: null, startTime: null, duration: null },
-  { id: 3, type: 'Pro Pool', status: 'busy', player: 'Alex Rivera', startTime: Date.now() - 58 * 60000, duration: 60 * 60000 }, // Near end
+  // T1: 55s elapsed -> Starts as "STARTED", becomes "PLAYING" in 5s
+  { id: 1, type: 'Pro Pool', status: 'busy', player: 'Rahul Mehta', startTime: Date.now() - 50000, duration: 60 * 60000 },
+
+  // T2: 10m 5s left -> Starts as "PLAYING", becomes "ENDING SOON" in 5s
+  { id: 2, type: 'Snooker', status: 'busy', player: 'Sarah Connor', startTime: Date.now() - (49 * 60000 + 55000), duration: 60 * 60000 },
+
+  // T3: 0m 5s left -> Starts as "FINAL MINUTES", becomes "TIME UP" in 5s
+  { id: 3, type: 'Pro Pool', status: 'busy', player: 'Alex Rivera', startTime: Date.now() - (59 * 60000 + 55000), duration: 60 * 60000 },
+
+  // T4: Available (No Session)
   { id: 4, type: 'Carom', status: 'available', player: null, startTime: null, duration: null }
 ];
 
@@ -14,13 +22,9 @@ class SoundSystem {
   static init() {
     if (!this.ctx) {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (AudioContext) {
-        this.ctx = new AudioContext();
-      }
+      if (AudioContext) this.ctx = new AudioContext();
     }
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
-    }
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
   }
 
   static playTone(freq, type, duration, vol = 0.1) {
@@ -37,16 +41,22 @@ class SoundSystem {
     osc.stop(this.ctx.currentTime + duration);
   }
 
-  static playNearEnd() {
-    // Double warning beep
+  static playStarted() {
+    // Bright ascending chime
+    this.playTone(523.25, 'sine', 0.2, 0.05); // C5
+    setTimeout(() => this.playTone(659.25, 'sine', 0.4, 0.05), 150); // E5
+  }
+
+  static playFinalMinutes() {
+    // Urgent double beep
     this.playTone(880, 'sine', 0.2, 0.05);
-    setTimeout(() => this.playTone(880, 'sine', 0.4, 0.05), 300);
+    setTimeout(() => this.playTone(880, 'sine', 0.4, 0.05), 250);
   }
 
   static playEnded() {
     // Long resonant alert
-    this.playTone(440, 'triangle', 0.8, 0.1); 
-    setTimeout(() => this.playTone(349.23, 'triangle', 1.2, 0.1), 400); 
+    this.playTone(440, 'triangle', 0.8, 0.1);
+    setTimeout(() => this.playTone(349.23, 'triangle', 1.2, 0.1), 400);
   }
 }
 
@@ -54,8 +64,7 @@ export default function TvDisplay() {
   const [now, setNow] = useState(Date.now());
   const [tables] = useState(MOCK_TABLES);
   const [isStarted, setIsStarted] = useState(false);
-  
-  // Track previous states to trigger sounds
+
   const previousStates = useRef({});
 
   useEffect(() => {
@@ -70,23 +79,36 @@ export default function TvDisplay() {
     tables.forEach(table => {
       if (table.status !== 'busy') return;
 
+      const elapsed = now - table.startTime;
       const end = table.startTime + table.duration;
       const remainingMs = end - now;
       const totalSeconds = Math.floor(remainingMs / 1000);
-      
-      const prevState = previousStates.current[table.id] || { alertedNearEnd: false, alertedEnded: false };
-      
-      // Near end alert: < 2 minutes remaining
-      if (totalSeconds > 0 && totalSeconds <= 120 && !prevState.alertedNearEnd) {
-        SoundSystem.playNearEnd();
-        previousStates.current[table.id] = { ...prevState, alertedNearEnd: true };
+
+      const prevState = previousStates.current[table.id] || {
+        alertedStarted: false,
+        alertedFinal: false,
+        alertedEnded: false
+      };
+
+      // Started: first 60 seconds
+      if (elapsed >= 0 && elapsed <= 60000 && !prevState.alertedStarted) {
+        SoundSystem.playStarted();
+        prevState.alertedStarted = true;
       }
-      
-      // Ended alert: exactly 0
+
+      // Final Minutes: <= 3 minutes
+      if (totalSeconds <= 180 && totalSeconds > 0 && !prevState.alertedFinal) {
+        SoundSystem.playFinalMinutes();
+        prevState.alertedFinal = true;
+      }
+
+      // Ended: <= 0 seconds
       if (totalSeconds <= 0 && !prevState.alertedEnded) {
         SoundSystem.playEnded();
-        previousStates.current[table.id] = { ...prevState, alertedEnded: true, alertedNearEnd: true };
+        prevState.alertedEnded = true;
       }
+
+      previousStates.current[table.id] = prevState;
     });
   }, [now, tables, isStarted]);
 
@@ -101,15 +123,15 @@ export default function TvDisplay() {
   if (!isStarted) {
     return (
       <div className="h-screen w-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-6 text-center">
-        <h1 className="text-4xl md:text-6xl font-display font-black text-white tracking-tighter mb-8">
+        <h1 className="text-[6vh] font-display font-black text-white tracking-tighter mb-[4vh]">
           TV Display Ready
         </h1>
-        <p className="text-text-dim text-lg md:text-xl max-w-lg mb-12">
+        <p className="text-text-dim text-[2vh] max-w-lg mb-[6vh]">
           Click the button below to initialize the audio engine and enter full-screen mode.
         </p>
-        <button 
+        <button
           onClick={handleStart}
-          className="px-10 py-5 bg-accent/20 border-2 border-accent/40 text-accent font-display text-2xl md:text-3xl font-bold rounded-3xl hover:bg-accent/30 transition-colors shadow-[0_0_40px_rgba(74,188,109,0.3)] animate-pulse"
+          className="px-[6vh] py-[3vh] bg-accent/20 border-2 border-accent/40 text-accent font-display text-[3vh] font-bold rounded-[3vh] hover:bg-accent/30 transition-colors shadow-[0_0_4vh_rgba(74,188,109,0.3)] animate-pulse"
         >
           Tap to Start Display
         </button>
@@ -132,7 +154,7 @@ export default function TvDisplay() {
   const formatTimeRange = (start, duration) => {
     const startDate = new Date(start);
     const endDate = new Date(start + duration);
-    
+
     const formatOpts = { hour: 'numeric', minute: '2-digit', hour12: true };
     return `${startDate.toLocaleTimeString('en-US', formatOpts)} - ${endDate.toLocaleTimeString('en-US', formatOpts)}`;
   };
@@ -144,15 +166,14 @@ export default function TvDisplay() {
     return Math.min(Math.max(percent, 0), 100);
   };
 
-  const currentTimeStr = new Date(now).toLocaleTimeString('en-US', { 
-    hour: 'numeric', 
+  const currentTimeStr = new Date(now).toLocaleTimeString('en-US', {
+    hour: 'numeric',
     minute: '2-digit',
     hour12: true
   });
 
   return (
     <div className="h-screen w-screen bg-[#0a0a0a] text-text-main font-sans overflow-hidden flex flex-col selection:bg-transparent cursor-none">
-      {/* Top Header - TV style */}
       <header className="px-[4vw] py-[2vh] flex items-center justify-between border-b border-white/5 bg-[#101010] flex-shrink-0 z-20 shadow-lg">
         <div className="flex items-center gap-[1vw]">
           <div className="w-[6vh] h-[6vh] bg-accent text-bg font-display font-bold text-[3vh] flex items-center justify-center rounded-[1.5vh] shadow-[0_0_2vh_rgba(74,188,109,0.2)]">
@@ -163,62 +184,87 @@ export default function TvDisplay() {
             <p className="text-text-dim text-[1.2vh] tracking-widest uppercase font-semibold mt-[0.5vh]">Live Status Board</p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-[1vw] text-[4vh] font-display font-bold text-white tracking-tight">
           <Clock className="text-accent w-[4vh] h-[4vh]" />
           {currentTimeStr}
         </div>
       </header>
 
-      {/* Main Grid Content - Strict 2x2 without scrollbars */}
       <main className="flex-1 p-[3vh] flex flex-col overflow-hidden bg-bg">
         <div className="grid grid-cols-2 grid-rows-2 gap-[3vh] h-full w-full">
           {tables.map(table => {
             const isBusy = table.status === 'busy';
-            
-            // Render Busy Card
+
             if (isBusy) {
               const progress = getProgress(table.startTime, table.duration);
+              const elapsedMs = now - table.startTime;
               const remainingMs = (table.startTime + table.duration) - now;
-              const isEndingSoon = remainingMs <= 120000 && remainingMs > 0; // < 2 mins
-              const isEnded = remainingMs <= 0;
+              const totalRemainingMins = remainingMs / 60000;
 
-              // Compute dynamic styles based on time status
-              const cardBorder = isEnded ? 'border-danger shadow-[0_0_50px_rgba(240,82,82,0.4)]' : 
-                                 isEndingSoon ? 'border-[#ff9f43] shadow-[0_0_30px_rgba(255,159,67,0.3)]' : 
-                                 'border-white/10 shadow-lg';
-              
-              const badgeBg = isEnded ? 'bg-danger text-white border-danger' : 
-                              isEndingSoon ? 'bg-[#ff9f43]/20 text-[#ff9f43] border-[#ff9f43]/40' : 
-                              'bg-white/10 text-white/70 border-white/20';
-              
-              const badgeText = isEnded ? 'TIME UP' : 
-                                isEndingSoon ? 'ENDING SOON' : 'IN PLAY';
+              const isEnded = remainingMs <= 0;
+              const isFinalMinutes = !isEnded && totalRemainingMins <= 3;
+              const isEndingSoon = !isEnded && !isFinalMinutes && totalRemainingMins <= 10;
+              const isJustStarted = !isEnded && elapsedMs <= 60000;
+
+              let cardBorder = 'border-white/10 shadow-lg';
+              let badgeBg = 'bg-white/10 text-white/70 border-white/20';
+              let badgeText = 'IN PLAY';
+              let timerColor = 'text-white';
+              let progressColor = 'bg-white';
+              let glowColor = 'bg-transparent';
+
+              if (isJustStarted) {
+                cardBorder = 'border-[#38bdf8]/40 shadow-[0_0_30px_rgba(56,189,248,0.2)]';
+                badgeBg = 'bg-[#38bdf8]/20 text-[#38bdf8] border-[#38bdf8]/40 animate-pulse';
+                badgeText = 'STARTED';
+                timerColor = 'text-[#38bdf8]';
+                progressColor = 'bg-[#38bdf8]';
+                glowColor = 'bg-[#38bdf8]';
+              } else if (isEndingSoon) {
+                cardBorder = 'border-[#ff9f43] shadow-[0_0_30px_rgba(255,159,67,0.2)]';
+                badgeBg = 'bg-[#ff9f43]/20 text-[#ff9f43] border-[#ff9f43]/40';
+                badgeText = 'ENDING SOON';
+                timerColor = 'text-[#ff9f43]';
+                progressColor = 'bg-[#ff9f43]';
+                glowColor = 'bg-[#ff9f43]';
+              } else if (isFinalMinutes) {
+                cardBorder = 'border-[#ff4757] shadow-[0_0_40px_rgba(255,71,87,0.3)]';
+                badgeBg = 'bg-[#ff4757]/20 text-[#ff4757] border-[#ff4757]/40 animate-pulse';
+                badgeText = 'FINAL MINS';
+                timerColor = 'text-[#ff4757]';
+                progressColor = 'bg-[#ff4757]';
+                glowColor = 'bg-[#ff4757]';
+              } else if (isEnded) {
+                cardBorder = 'border-danger shadow-[0_0_50px_rgba(240,82,82,0.4)]';
+                badgeBg = 'bg-danger text-white border-danger animate-pulse';
+                badgeText = 'TIME UP';
+                timerColor = 'text-danger animate-pulse';
+                progressColor = 'bg-danger';
+                glowColor = 'bg-danger';
+              }
 
               return (
-                <div key={table.id} className={`relative rounded-[3vh] overflow-hidden flex flex-col bg-[#141414] border ${cardBorder} transition-colors duration-500`}>
+                <div key={table.id} className={`relative rounded-[3vh] overflow-hidden flex flex-col bg-[#141414] border ${cardBorder} transition-colors duration-1000`}>
                   <div className="p-[4vh] flex-1 flex flex-col z-10 relative">
-                    {/* TOP HEADER */}
                     <div className="flex justify-between items-start">
-                      <h2 className="text-[7vh] font-display font-black text-white tracking-tighter leading-none">
+                      <h2 className="text-[7vh] font-display font-black text-white/80 tracking-tighter leading-none">
                         T{table.id}
                       </h2>
-                      <div className={`px-[2.5vh] py-[1vh] rounded-full border font-bold text-[1.8vh] tracking-widest uppercase ${badgeBg} ${isEndingSoon || isEnded ? 'animate-pulse' : ''}`}>
+                      <div className={`px-[2.5vh] py-[1vh] rounded-full border font-bold text-[1.8vh] tracking-widest uppercase ${badgeBg}`}>
                         {badgeText}
                       </div>
                     </div>
 
-                    {/* CENTER MASSIVE TIMER */}
                     <div className="flex-1 flex flex-col justify-center items-center text-center">
-                      <p className={`text-[2.2vh] font-bold uppercase tracking-widest mb-[1vh] ${isEnded || isEndingSoon ? 'text-danger' : 'text-text-dim'}`}>
+                      <p className={`text-[2.2vh] font-bold uppercase tracking-widest mb-[1vh] ${isEnded || isFinalMinutes ? 'text-danger' : 'text-text-dim'}`}>
                         {isEnded ? 'Overdue By' : 'Time Left'}
                       </p>
-                      <p className={`text-[13vh] font-display font-black tracking-tighter leading-none tabular-nums ${isEnded ? 'text-danger animate-pulse' : isEndingSoon ? 'text-[#ff9f43]' : 'text-white'}`}>
+                      <p className={`text-[13vh] font-display font-black tracking-tighter leading-none tabular-nums ${timerColor}`}>
                         {isEnded ? '00:00:00' : formatTimeRemaining(table.startTime, table.duration)}
                       </p>
                     </div>
 
-                    {/* BOTTOM FOOTER */}
                     <div className="mt-auto border-t border-white/10 pt-[3vh] pb-[0.5vh] flex items-end justify-between">
                       <div>
                         <p className="text-text-dim text-[1.5vh] font-medium uppercase tracking-wider mb-[0.5vh]">Playing Now</p>
@@ -235,26 +281,23 @@ export default function TvDisplay() {
                     </div>
                   </div>
 
-                  {/* Progress Bar Container */}
                   <div className="h-[1.5vh] w-full bg-black relative z-10 flex-shrink-0">
-                    <div 
-                      className={`h-full transition-all duration-1000 ease-linear ${isEnded ? 'bg-danger' : isEndingSoon ? 'bg-[#ff9f43]' : 'bg-white'}`} 
+                    <div
+                      className={`h-full transition-all duration-1000 ease-linear ${progressColor}`}
                       style={{ width: `${progress}%` }}
                     />
                   </div>
 
-                  {/* Background ambient glow */}
-                  <div className={`absolute top-0 right-0 w-[30vh] h-[30vh] rounded-full blur-[8vh] pointer-events-none opacity-20 ${isEnded ? 'bg-danger' : isEndingSoon ? 'bg-[#ff9f43]' : 'bg-transparent'}`} />
+                  <div className={`absolute top-0 right-0 w-[30vh] h-[30vh] rounded-full blur-[8vh] pointer-events-none opacity-20 ${glowColor}`} />
                 </div>
               );
             }
 
-            // Render Available Card
             return (
               <div key={table.id} className="relative rounded-[3vh] overflow-hidden flex flex-col bg-[#111612] border border-accent/10 shadow-[inset_0_0_8vh_rgba(74,188,109,0.02)] transition-colors duration-1000">
                 <div className="p-[4vh] flex-1 flex flex-col z-10 relative">
                   <div className="flex justify-between items-start">
-                    <h2 className="text-[7vh] font-display font-black text-white/30 tracking-tighter leading-none">
+                    <h2 className="text-[7vh] font-display font-black text-white/40 tracking-tighter leading-none">
                       T{table.id}
                     </h2>
                   </div>
