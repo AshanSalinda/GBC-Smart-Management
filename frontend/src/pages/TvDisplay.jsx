@@ -7,10 +7,10 @@ const MOCK_TABLES = [
   { id: 1, status: 'busy', player: 'Rahul Mehta', startTime: Date.now() - 55000, duration: 60 * 60000 },
 
   // T2: 10m 5s left -> Starts as "PLAYING", becomes "ENDING SOON" in 5s
-  { id: 2, status: 'busy', player: 'Sarah Connor', startTime: Date.now() - (49 * 60000 + 55000), duration: 60 * 60000 },
+  { id: 2, status: 'busy', player: 'Sarah Connor', startTime: Date.now() - (45 * 60000 + 55000), duration: 60 * 60000 },
 
   // T3: 0m 5s left -> Starts as "FINAL MINUTES", becomes "TIME UP" in 5s
-  { id: 3, status: 'busy', player: 'Alex Rivera', startTime: Date.now() - (56 * 60000 + 55000), duration: 60 * 60000 },
+  { id: 3, status: 'busy', player: 'Alex Rivera', startTime: Date.now() - (40 * 60000 + 55000), duration: 60 * 60000 },
 
   // T4: Available (No Session)
   { id: 4, status: 'available', player: null, startTime: null, duration: null }
@@ -169,8 +169,8 @@ export default function TvDisplay() {
         </div>
       </header>
 
-      <main className="flex-1 p-[3vh] flex flex-col overflow-hidden bg-transparent">
-        <div className="grid grid-cols-2 grid-rows-2 gap-[3vh] h-full w-full">
+      <main className="flex-1 p-[2.5vh] flex flex-col items-center overflow-hidden bg-transparent">
+        <div className="grid grid-cols-2 grid-rows-2 gap-[2.5vh] h-full w-full max-w-[200vh]">
           {tables.map(table => {
             const isBusy = table.status === 'busy';
 
