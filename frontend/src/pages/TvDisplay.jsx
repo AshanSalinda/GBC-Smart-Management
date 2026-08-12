@@ -176,8 +176,8 @@ export default function TvDisplay() {
   return (
     <div className="h-screen w-screen bg-[#070709] text-text-main font-sans overflow-hidden flex flex-col selection:bg-transparent cursor-none relative z-0">
       {/* Global Background Blobs for Glassmorphism */}
-      <div className="absolute top-0 left-1/3 w-[60vw] h-[60vw] bg-white/[0.02] rounded-full blur-[15vh] pointer-events-none -translate-y-1/2 -z-10" />
-      <div className="absolute bottom-0 right-1/4 w-[50vw] h-[50vw] bg-accent/[0.03] rounded-full blur-[15vh] pointer-events-none translate-y-1/2 -z-10" />
+      <div className="hidden md:block absolute top-0 left-1/3 w-[60vw] h-[60vw] bg-white/[0.02] rounded-full blur-[15vh] pointer-events-none -translate-y-1/2 -z-10" />
+      <div className="hidden md:block absolute bottom-0 right-1/4 w-[50vw] h-[50vw] bg-accent/[0.03] rounded-full blur-[15vh] pointer-events-none translate-y-1/2 -z-10" />
 
       {/* Top Header - TV style */}
       <header className="px-4 py-4 md:px-[4vw] md:py-[2vh] flex items-center justify-between border-b border-white/5 bg-[#101010]/80 backdrop-blur-md flex-shrink-0 z-20 shadow-lg">
@@ -220,7 +220,7 @@ export default function TvDisplay() {
               const isFinalMinutes = !isEnded && totalRemainingMins <= 3;
               const isEndingSoon = !isEnded && !isFinalMinutes && totalRemainingMins <= 10;
 
-              let cardBg = 'bg-white/[0.03] backdrop-blur-[2vh]';
+              let cardBg = 'bg-white/[0.03] md:backdrop-blur-[2vh]';
               let cardBorder = 'border-white/10 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)]';
               let badgeBg = 'bg-white/5 text-white/70 border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]';
               let badgeText = 'IN PLAY';
@@ -229,7 +229,7 @@ export default function TvDisplay() {
               let glowColor = 'bg-white opacity-5';
 
               if (isEndingSoon) {
-                cardBg = 'bg-[#ff9f43]/[0.03] backdrop-blur-[2vh]';
+                cardBg = 'bg-[#ff9f43]/[0.03] md:backdrop-blur-[2vh]';
                 cardBorder = 'border-[#ff9f43]/20 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,159,67,0.2)]';
                 badgeBg = 'bg-[#ff9f43]/5 text-[#ff9f43] border-[#ff9f43]/20 shadow-[inset_0_1px_1px_rgba(255,159,67,0.2)]';
                 badgeText = 'ENDING SOON';
@@ -237,7 +237,7 @@ export default function TvDisplay() {
                 progressColor = 'bg-[#ff9f43]';
                 glowColor = 'bg-[#ff9f43] opacity-20';
               } else if (isFinalMinutes) {
-                cardBg = 'bg-[#ff4757]/[0.03] backdrop-blur-[2vh]';
+                cardBg = 'bg-[#ff4757]/[0.03] md:backdrop-blur-[2vh]';
                 cardBorder = 'border-[#ff4757]/20 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,71,87,0.2)]';
                 badgeBg = 'bg-[#ff4757]/10 text-[#ff4757] border-[#ff4757]/30 shadow-[inset_0_1px_1px_rgba(255,71,87,0.2)] animate-pulse';
                 badgeText = 'FINAL MINS';
@@ -245,7 +245,7 @@ export default function TvDisplay() {
                 progressColor = 'bg-[#ff4757]';
                 glowColor = 'bg-[#ff4757] opacity-30';
               } else if (isEnded) {
-                cardBg = 'bg-danger/[0.05] backdrop-blur-[2vh]';
+                cardBg = 'bg-danger/[0.05] md:backdrop-blur-[2vh]';
                 cardBorder = 'border-danger/50 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(240,82,82,0.4)]';
                 badgeBg = 'bg-danger/20 text-danger border-danger/50 shadow-[inset_0_1px_1px_rgba(240,82,82,0.4)] animate-pulse';
                 badgeText = 'TIME UP';
@@ -298,13 +298,13 @@ export default function TvDisplay() {
                     />
                   </div>
 
-                  <div className={`absolute top-0 right-0 w-48 h-48 md:w-[30vh] md:h-[30vh] rounded-full blur-[64px] md:blur-[20vh] pointer-events-none opacity-20 ${glowColor}`} />
+                  <div className={`hidden md:block absolute top-0 right-0 w-48 h-48 md:w-[30vh] md:h-[30vh] rounded-full blur-[64px] md:blur-[20vh] pointer-events-none opacity-20 ${glowColor}`} />
                 </div>
               );
             }
             // Render Available Card
             return (
-              <div key={table.id} className="relative min-h-[220px] md:min-h-0 rounded-3xl md:rounded-[3vh] overflow-hidden flex flex-col bg-accent/[0.02] backdrop-blur-[2vh] border border-accent/20 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(74,188,109,0.15)] transition-colors duration-1000">
+              <div key={table.id} className="relative min-h-[220px] md:min-h-0 rounded-3xl md:rounded-[3vh] overflow-hidden flex flex-col bg-accent/[0.02] md:backdrop-blur-[2vh] border border-accent/20 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(74,188,109,0.15)] transition-colors duration-1000">
                 <div className="p-5 md:p-[3.5vh] flex-1 flex flex-col z-10 relative">
                   {/* HEADER */}
                   <div className="flex justify-between items-start">
@@ -331,7 +331,7 @@ export default function TvDisplay() {
                 </div>
 
                 {/* Background ambient glow */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 md:w-[30vh] md:h-[30vh] bg-accent rounded-full blur-3xl md:blur-[12vh] pointer-events-none opacity-[0.1]" />
+                <div className="hidden md:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 md:w-[30vh] md:h-[30vh] bg-accent rounded-full md:blur-[12vh] pointer-events-none opacity-[0.1]" />
               </div>
             );
           })}
