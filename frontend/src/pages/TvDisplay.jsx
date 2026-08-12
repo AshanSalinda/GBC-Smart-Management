@@ -7,10 +7,10 @@ const MOCK_TABLES = [
   { id: 1, status: 'busy', player: 'Rahul Mehta', startTime: Date.now() - 55000, duration: 60 * 60000 },
 
   // T2: 10m 5s left -> Starts as "PLAYING", becomes "ENDING SOON" in 5s
-  { id: 2, status: 'busy', player: 'Sarah Connor', startTime: Date.now() - (45 * 60000 + 55000), duration: 60 * 60000 },
+  { id: 2, status: 'busy', player: 'Sarah Connor', startTime: Date.now() - (48 * 60000 + 55000), duration: 60 * 60000 },
 
-  // T3: 0m 5s left -> Starts as "FINAL MINUTES", becomes "TIME UP" in 5s
-  { id: 3, status: 'busy', player: 'Alex Rivera', startTime: Date.now() - (40 * 60000 + 55000), duration: 60 * 60000 },
+  // T3: 55s overdue -> Starts as "TIME UP", becomes "AVAILABLE" in 5s
+  { id: 3, status: 'busy', player: 'Alex Rivera', startTime: Date.now() - (59 * 60000 + 55000), duration: 60 * 60000 },
 
   // T4: Available (No Session)
   { id: 4, status: 'available', player: null, startTime: null, duration: null }
@@ -18,7 +18,7 @@ const MOCK_TABLES = [
 
 export default function TvDisplay() {
   const [now, setNow] = useState(Date.now());
-  const [tables] = useState(MOCK_TABLES);
+  const [tables, setTables] = useState(MOCK_TABLES);
   const [isStarted, setIsStarted] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
 
@@ -75,6 +75,43 @@ export default function TvDisplay() {
       previousStates.current[table.id] = prevState;
     });
   }, [now, tables, isStarted]);
+
+  // Auto-reset tables to available after 1 minute of being overdue
+  useEffect(() => {
+    if (!isStarted) return;
+
+    setTables(currentTables => {
+      let hasChanges = false;
+      const newTables = currentTables.map(table => {
+        if (table.status === 'busy') {
+          const remainingMs = (table.startTime + table.duration) - now;
+          if (remainingMs <= -60000) { // 1 minute overdue
+            hasChanges = true;
+
+            // Clear previous alerted states so if it gets re-booked it alerts again
+            if (previousStates.current[table.id]) {
+              previousStates.current[table.id] = {
+                alertedStarted: false,
+                alertedEndingSoon: false,
+                alertedFinal: false,
+                alertedEnded: false
+              };
+            }
+
+            return {
+              ...table,
+              status: 'available',
+              player: null,
+              startTime: null,
+              duration: null
+            };
+          }
+        }
+        return table;
+      });
+      return hasChanges ? newTables : currentTables;
+    });
+  }, [now, isStarted]);
 
   const handleStart = () => {
     SoundSystem.init();
@@ -145,25 +182,25 @@ export default function TvDisplay() {
       {/* Top Header - TV style */}
       <header className="px-4 py-4 md:px-[4vw] md:py-[2vh] flex items-center justify-between border-b border-white/5 bg-[#101010]/80 backdrop-blur-md flex-shrink-0 z-20 shadow-lg">
         <div className="flex items-center gap-3 md:gap-[1vw]">
-          <div className="w-10 h-10 md:w-[6vh] md:h-[6vh] bg-accent text-bg font-display font-bold text-lg md:text-[2.2vh] flex items-center justify-center rounded-xl md:rounded-[1.5vh] shadow-[0_0_2vh_rgba(74,188,109,0.2)]">
+          <div className="w-8 h-8 md:w-[6vh] md:h-[6vh] bg-accent text-bg font-display font-bold text-xs md:text-lg md:text-[2.2vh] flex items-center justify-center rounded-xl md:rounded-[1.5vh] shadow-[0_0_2vh_rgba(74,188,109,0.2)]">
             GBC
           </div>
           <div>
-            <h1 className="text-xl md:text-[3.5vh] font-display font-bold text-white leading-none">Galle Billiards Club</h1>
-            <p className="text-text-dim text-[0.65rem] md:text-[1.2vh] tracking-widest uppercase font-semibold mt-1 md:mt-[0.5vh]">Live Status Board</p>
+            <h1 className="text-lg md:text-[3.5vh] font-display font-bold text-white leading-none">Galle Billiards Club</h1>
+            <p className="text-text-dim text-[0.5rem] md:text-[1.2vh] tracking-widest uppercase font-semibold mt-1 md:mt-[0.5vh]">Live Status Board</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3 md:gap-[2vw]">
           {/* Connection Status Indicator */}
-          <div className="flex items-center gap-2 md:gap-[0.8vw] bg-white/5 border border-white/10 px-3 py-1.5 md:px-[1.5vw] md:py-[1vh] rounded-full" >
+          <div className="flex items-center gap-2 md:gap-[0.8vw] bg-white/5 border border-white/10 px-1.5 py-1.5 md:px-[1.5vw] md:py-[1vh] rounded-full" >
             <div className={`w-2.5 h-2.5 md:w-[1.5vh] md:h-[1.5vh] rounded-full ${isConnected ? 'bg-accent animate-pulse shadow-[0_0_1vh_rgba(74,188,109,0.6)]' : 'bg-danger shadow-[0_0_1vh_rgba(240,82,82,0.6)]'}`} />
-            <span className={`text-xs md:text-[1.75vh] font-bold tracking-widest uppercase ${isConnected ? 'text-accent' : 'text-danger'}`}>
-              <span className="hidden sm:inline">{isConnected ? 'Live' : 'Disconnected'}</span>
+            <span className={`hidden sm:inline text-xs md:text-[1.75vh] font-bold tracking-widest uppercase ${isConnected ? 'text-accent' : 'text-danger'}`}>
+              {isConnected ? 'Live' : 'Disconnected'}
             </span>
           </div>
 
-          <div className="flex items-center gap-2 md:gap-[1vw] text-2xl md:text-[4vh] font-display text-white drop-shadow-[0_0_1vh_rgba(255,255,255,0.3)]">
+          <div className="flex items-center gap-2 md:gap-[1vw] text-md md:text-[4vh] font-display text-white drop-shadow-[0_0_1vh_rgba(255,255,255,0.3)]">
             {currentTimeStr}
           </div>
         </div>
