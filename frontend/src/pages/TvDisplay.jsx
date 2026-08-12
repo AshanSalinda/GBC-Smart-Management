@@ -221,25 +221,25 @@ export default function TvDisplay() {
               let glowColor = 'bg-white opacity-5';
 
               if (isEndingSoon) {
-                cardBg = 'bg-[#ff9f43]/[0.05] backdrop-blur-[2vh]';
-                cardBorder = 'border-[#ff9f43]/40 shadow-[0_0_4vh_rgba(255,159,67,0.15),inset_0_1px_1px_rgba(255,159,67,0.2)]';
-                badgeBg = 'bg-[#ff9f43]/20 text-[#ff9f43] border-[#ff9f43]/40';
+                cardBg = 'bg-[#ff9f43]/[0.03] backdrop-blur-[2vh]';
+                cardBorder = 'border-[#ff9f43]/20 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,159,67,0.2)]';
+                badgeBg = 'bg-[#ff9f43]/5 text-[#ff9f43] border-[#ff9f43]/20 shadow-[inset_0_1px_1px_rgba(255,159,67,0.2)]';
                 badgeText = 'ENDING SOON';
                 timerColor = 'text-[#ff9f43] drop-shadow-[0_0_2vh_rgba(255,159,67,0.3)]';
                 progressColor = 'bg-[#ff9f43]';
                 glowColor = 'bg-[#ff9f43] opacity-20';
               } else if (isFinalMinutes) {
-                cardBg = 'bg-[#ff4757]/[0.05] backdrop-blur-[2vh]';
-                cardBorder = 'border-[#ff4757]/60 shadow-[0_0_5vh_rgba(255,71,87,0.25),inset_0_1px_1px_rgba(255,71,87,0.3)]';
-                badgeBg = 'bg-[#ff4757]/20 text-[#ff4757] border-[#ff4757]/40 animate-pulse';
+                cardBg = 'bg-[#ff4757]/[0.03] backdrop-blur-[2vh]';
+                cardBorder = 'border-[#ff4757]/20 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,71,87,0.2)]';
+                badgeBg = 'bg-[#ff4757]/10 text-[#ff4757] border-[#ff4757]/30 shadow-[inset_0_1px_1px_rgba(255,71,87,0.2)] animate-pulse';
                 badgeText = 'FINAL MINS';
                 timerColor = 'text-[#ff4757] drop-shadow-[0_0_2vh_rgba(255,71,87,0.4)]';
                 progressColor = 'bg-[#ff4757]';
                 glowColor = 'bg-[#ff4757] opacity-30';
               } else if (isEnded) {
-                cardBg = 'bg-danger/[0.08] backdrop-blur-[2vh]';
-                cardBorder = 'border-danger shadow-[0_0_6vh_rgba(240,82,82,0.4),inset_0_1px_1px_rgba(240,82,82,0.5)]';
-                badgeBg = 'bg-danger text-white border-danger animate-pulse';
+                cardBg = 'bg-danger/[0.05] backdrop-blur-[2vh]';
+                cardBorder = 'border-danger/50 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(240,82,82,0.4)]';
+                badgeBg = 'bg-danger/20 text-danger border-danger/50 shadow-[inset_0_1px_1px_rgba(240,82,82,0.4)] animate-pulse';
                 badgeText = 'TIME UP';
                 timerColor = 'text-danger animate-pulse drop-shadow-[0_0_3vh_rgba(240,82,82,0.5)]';
                 progressColor = 'bg-danger';
@@ -250,7 +250,7 @@ export default function TvDisplay() {
                 <div key={table.id} className={`relative rounded-[3vh] overflow-hidden flex flex-col ${cardBg} border ${cardBorder} transition-colors duration-1000`}>
                   <div className="p-[3.5vh] flex-1 flex flex-col z-10 relative">
                     <div className="flex justify-between items-start">
-                      <h2 className="text-[6vh] font-display font-black text-white/80 tracking-tighter leading-none drop-shadow-sm">
+                      <h2 className="text-[6vh] font-display font-black text-white/60 tracking-tighter leading-none drop-shadow-sm">
                         T{table.id}
                       </h2>
                       <div className={`px-[2vh] py-[0.8vh] rounded-full border font-bold text-[1.5vh] tracking-widest uppercase ${badgeBg}`}>
@@ -283,7 +283,7 @@ export default function TvDisplay() {
                     </div>
                   </div>
 
-                  <div className="h-[0.5vh] w-full bg-black/30 relative z-10 flex-shrink-0">
+                  <div className="h-[0.3vh] w-full bg-black/30 relative z-10 flex-shrink-0">
                     <div
                       className={`h-full transition-all duration-1000 ease-linear ${progressColor}`}
                       style={{ width: `${progress}%` }}
@@ -294,31 +294,36 @@ export default function TvDisplay() {
                 </div>
               );
             }
-
+            // Render Available Card
             return (
-              <div key={table.id} className="relative rounded-[3vh] overflow-hidden flex flex-col bg-white/[0.01] backdrop-blur-[2vh] border border-accent/20 shadow-[inset_0_1px_1px_rgba(74,188,109,0.1)] transition-colors duration-1000">
-                <div className="p-[4vh] flex-1 flex flex-col z-10 relative">
+              <div key={table.id} className="relative rounded-[3vh] overflow-hidden flex flex-col bg-accent/[0.02] backdrop-blur-[2vh] border border-accent/20 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(74,188,109,0.15)] transition-colors duration-1000">
+                <div className="p-[3.5vh] flex-1 flex flex-col z-10 relative">
+                  {/* HEADER */}
                   <div className="flex justify-between items-start">
-                    <h2 className="text-[7vh] font-display font-black text-white/50 tracking-tighter leading-none drop-shadow-md">
+                    <h2 className="text-[6vh] font-display font-black text-white/60 tracking-tighter leading-none drop-shadow-sm">
                       T{table.id}
                     </h2>
+                    <div className="px-[2vh] py-[0.8vh] rounded-full border border-accent/20 bg-accent/10 text-accent shadow-[inset_0_1px_1px_rgba(74,188,109,0.2)] font-bold text-[1.5vh] tracking-widest uppercase">
+                      AVAILABLE
+                    </div>
                   </div>
 
-                  <div className="flex-1 flex flex-col justify-center items-center text-center mt-[-4vh]">
-                    <div className="w-[12vh] h-[12vh] rounded-full border-[0.5vh] border-accent/20 flex items-center justify-center mb-[4vh] shadow-[0_0_4vh_rgba(74,188,109,0.1)]">
-                      <div className="w-[8vh] h-[8vh] rounded-full bg-accent/20 animate-pulse" />
+                  {/* CENTER CONTENT */}
+                  <div className="flex-1 flex flex-col justify-center items-center text-center">
+                    <div className="w-[10vh] h-[10vh] rounded-full border border-accent/30 bg-accent/5 flex items-center justify-center mb-[3vh] shadow-[inset_0_1px_5px_rgba(74,188,109,0.2)]">
+                      <div className="w-[4vh] h-[4vh] rounded-full bg-accent/40 animate-pulse blur-[0.3vh]" />
                     </div>
-                    <h3 className="text-[5vh] font-display font-light text-white tracking-widest uppercase mb-[1vh]">
-                      Available
+                    <h3 className="text-[4vh] font-display font-light text-white/80 tracking-widest uppercase mb-[1vh] drop-shadow-md">
+                      Ready to Play
                     </h3>
-                    <p className="text-accent-bright/70 text-[2vh] font-medium tracking-widest uppercase">
-                      Ready for Booking
+                    <p className="text-accent/80 text-[1.8vh] font-medium tracking-widest uppercase max-w-[80%] leading-relaxed">
+                      Please visit the front desk to start a session
                     </p>
                   </div>
                 </div>
 
                 {/* Background ambient glow */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-[40vh] h-[40vh] bg-accent rounded-full blur-[12vh] pointer-events-none opacity-[0.07]" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[30vh] h-[30vh] bg-accent rounded-full blur-[12vh] pointer-events-none opacity-[0.1]" />
               </div>
             );
           })}
