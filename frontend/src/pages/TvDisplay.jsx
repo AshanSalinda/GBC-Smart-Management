@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import SoundSystem from '../utils/SoundSystem';
 
 // MOCK DATA: Configured to demonstrate live transitions 5 seconds after page load!
 const MOCK_TABLES = [
@@ -14,50 +15,6 @@ const MOCK_TABLES = [
   // T4: Available (No Session)
   { id: 4, status: 'available', player: null, startTime: null, duration: null }
 ];
-
-// --- Web Audio API Sound System ---
-class SoundSystem {
-  static ctx = null;
-  static init() {
-    if (!this.ctx) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (AudioContext) this.ctx = new AudioContext();
-    }
-    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
-  }
-
-  static playTone(freq, type, duration, vol = 0.1) {
-    if (!this.ctx) return;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start();
-    osc.stop(this.ctx.currentTime + duration);
-  }
-
-  static playStarted() {
-    // Bright ascending chime
-    this.playTone(523.25, 'sine', 0.2, 0.05); // C5
-    setTimeout(() => this.playTone(659.25, 'sine', 0.4, 0.05), 150); // E5
-  }
-
-  static playFinalMinutes() {
-    // Urgent double beep
-    this.playTone(880, 'sine', 0.2, 0.05);
-    setTimeout(() => this.playTone(880, 'sine', 0.4, 0.05), 250);
-  }
-
-  static playEnded() {
-    // Long resonant alert
-    this.playTone(440, 'triangle', 0.8, 0.1);
-    setTimeout(() => this.playTone(349.23, 'triangle', 1.2, 0.1), 400);
-  }
-}
 
 export default function TvDisplay() {
   const [now, setNow] = useState(Date.now());
@@ -86,6 +43,7 @@ export default function TvDisplay() {
 
       const prevState = previousStates.current[table.id] || {
         alertedStarted: false,
+        alertedEndingSoon: false,
         alertedFinal: false,
         alertedEnded: false
       };
@@ -94,6 +52,12 @@ export default function TvDisplay() {
       if (elapsed >= 0 && elapsed <= 60000 && !prevState.alertedStarted) {
         SoundSystem.playStarted();
         prevState.alertedStarted = true;
+      }
+
+      // Ending Soon: <= 10 minutes
+      if (totalSeconds <= 600 && totalSeconds > 180 && !prevState.alertedEndingSoon) {
+        SoundSystem.playEndingSoon();
+        prevState.alertedEndingSoon = true;
       }
 
       // Final Minutes: <= 3 minutes
@@ -185,7 +149,7 @@ export default function TvDisplay() {
             GBC
           </div>
           <div>
-            <h1 className="text-[3vh] font-display font-bold tracking-tight text-white leading-none">Galle Billiards Club</h1>
+            <h1 className="text-[3.5vh] font-display font-bold text-white leading-none">Galle Billiards Club</h1>
             <p className="text-text-dim text-[1.2vh] tracking-widest uppercase font-semibold mt-[0.5vh]">Live Status Board</p>
           </div>
         </div>
