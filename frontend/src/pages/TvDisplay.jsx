@@ -1,19 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
-import { Clock } from 'lucide-react';
 
 // MOCK DATA: Configured to demonstrate live transitions 5 seconds after page load!
 const MOCK_TABLES = [
   // T1: 55s elapsed -> Starts as "STARTED", becomes "PLAYING" in 5s
-  { id: 1, type: 'Pro Pool', status: 'busy', player: 'Rahul Mehta', startTime: Date.now() - 55000, duration: 60 * 60000 },
+  { id: 1, status: 'busy', player: 'Rahul Mehta', startTime: Date.now() - 55000, duration: 60 * 60000 },
 
   // T2: 10m 5s left -> Starts as "PLAYING", becomes "ENDING SOON" in 5s
-  { id: 2, type: 'Snooker', status: 'busy', player: 'Sarah Connor', startTime: Date.now() - (49 * 60000 + 55000), duration: 60 * 60000 },
+  { id: 2, status: 'busy', player: 'Sarah Connor', startTime: Date.now() - (49 * 60000 + 55000), duration: 60 * 60000 },
 
   // T3: 0m 5s left -> Starts as "FINAL MINUTES", becomes "TIME UP" in 5s
-  { id: 3, type: 'Pro Pool', status: 'busy', player: 'Alex Rivera', startTime: Date.now() - (56 * 60000 + 55000), duration: 60 * 60000 },
+  { id: 3, status: 'busy', player: 'Alex Rivera', startTime: Date.now() - (56 * 60000 + 55000), duration: 60 * 60000 },
 
   // T4: Available (No Session)
-  { id: 4, type: 'Carom', status: 'available', player: null, startTime: null, duration: null }
+  { id: 4, status: 'available', player: null, startTime: null, duration: null }
 ];
 
 // --- Web Audio API Sound System ---
@@ -64,6 +63,7 @@ export default function TvDisplay() {
   const [now, setNow] = useState(Date.now());
   const [tables] = useState(MOCK_TABLES);
   const [isStarted, setIsStarted] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
 
   const previousStates = useRef({});
 
@@ -181,17 +181,27 @@ export default function TvDisplay() {
       {/* Top Header - TV style */}
       <header className="px-[4vw] py-[2vh] flex items-center justify-between border-b border-white/5 bg-[#101010]/80 backdrop-blur-md flex-shrink-0 z-20 shadow-lg">
         <div className="flex items-center gap-[1vw]">
-          <div className="w-[6vh] h-[6vh] bg-accent text-bg font-display font-bold text-[3vh] flex items-center justify-center rounded-[1.5vh] shadow-[0_0_2vh_rgba(74,188,109,0.2)]">
-            B
+          <div className="w-[6vh] h-[6vh] bg-accent text-bg font-display font-bold text-[2.2vh] flex items-center justify-center rounded-[1.5vh] shadow-[0_0_2vh_rgba(74,188,109,0.2)]">
+            GBC
           </div>
           <div>
-            <h1 className="text-[3vh] font-display font-bold tracking-tight text-white leading-none">GBC Billiard Station</h1>
+            <h1 className="text-[3vh] font-display font-bold tracking-tight text-white leading-none">Galle Billiards Club</h1>
             <p className="text-text-dim text-[1.2vh] tracking-widest uppercase font-semibold mt-[0.5vh]">Live Status Board</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-[1vw] text-[4vh] font-display text-white drop-shadow-[0_0_1vh_rgba(255,255,255,0.3)]">
-          {currentTimeStr}
+        <div className="flex items-center gap-[2vw]">
+          {/* Connection Status Indicator */}
+          <div className="flex items-center gap-[0.8vw] bg-white/5 border border-white/10 px-[1.5vw] py-[1vh] rounded-full" >
+            <div className={`w-[1.5vh] h-[1.5vh] rounded-full ${isConnected ? 'bg-accent animate-pulse shadow-[0_0_1vh_rgba(74,188,109,0.6)]' : 'bg-danger shadow-[0_0_1vh_rgba(240,82,82,0.6)]'}`} />
+            <span className={`text-[1.75vh] font-bold tracking-widest uppercase ${isConnected ? 'text-accent' : 'text-danger'}`}>
+              {isConnected ? 'Live' : 'Disconnected'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-[1vw] text-[4vh] font-display text-white drop-shadow-[0_0_1vh_rgba(255,255,255,0.3)]">
+            {currentTimeStr}
+          </div>
         </div>
       </header>
 
