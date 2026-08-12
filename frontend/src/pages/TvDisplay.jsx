@@ -294,7 +294,7 @@ export default function TvDisplay() {
                 </div>
 
                 {/* Background ambient glow */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[30vh] h-[30vh] bg-accent rounded-full blur-[12vh] pointer-events-none opacity-[0.1]" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 md:w-[30vh] md:h-[30vh] bg-accent rounded-full blur-3xl md:blur-[12vh] pointer-events-none opacity-[0.1]" />
               </div>
             );
           })}
