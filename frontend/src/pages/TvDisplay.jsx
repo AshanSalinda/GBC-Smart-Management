@@ -143,47 +143,45 @@ export default function TvDisplay() {
       <div className="absolute bottom-0 right-1/4 w-[50vw] h-[50vw] bg-accent/[0.03] rounded-full blur-[15vh] pointer-events-none translate-y-1/2 -z-10" />
 
       {/* Top Header - TV style */}
-      <header className="px-[4vw] py-[2vh] flex items-center justify-between border-b border-white/5 bg-[#101010]/80 backdrop-blur-md flex-shrink-0 z-20 shadow-lg">
-        <div className="flex items-center gap-[1vw]">
-          <div className="w-[6vh] h-[6vh] bg-accent text-bg font-display font-bold text-[2.2vh] flex items-center justify-center rounded-[1.5vh] shadow-[0_0_2vh_rgba(74,188,109,0.2)]">
+      <header className="px-4 py-4 md:px-[4vw] md:py-[2vh] flex items-center justify-between border-b border-white/5 bg-[#101010]/80 backdrop-blur-md flex-shrink-0 z-20 shadow-lg">
+        <div className="flex items-center gap-3 md:gap-[1vw]">
+          <div className="w-10 h-10 md:w-[6vh] md:h-[6vh] bg-accent text-bg font-display font-bold text-lg md:text-[2.2vh] flex items-center justify-center rounded-xl md:rounded-[1.5vh] shadow-[0_0_2vh_rgba(74,188,109,0.2)]">
             GBC
           </div>
           <div>
-            <h1 className="text-[3.5vh] font-display font-bold text-white leading-none">Galle Billiards Club</h1>
-            <p className="text-text-dim text-[1.2vh] tracking-widest uppercase font-semibold mt-[0.5vh]">Live Status Board</p>
+            <h1 className="text-xl md:text-[3.5vh] font-display font-bold text-white leading-none">Galle Billiards Club</h1>
+            <p className="text-text-dim text-[0.65rem] md:text-[1.2vh] tracking-widest uppercase font-semibold mt-1 md:mt-[0.5vh]">Live Status Board</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-[2vw]">
+        <div className="flex items-center gap-3 md:gap-[2vw]">
           {/* Connection Status Indicator */}
-          <div className="flex items-center gap-[0.8vw] bg-white/5 border border-white/10 px-[1.5vw] py-[1vh] rounded-full" >
-            <div className={`w-[1.5vh] h-[1.5vh] rounded-full ${isConnected ? 'bg-accent animate-pulse shadow-[0_0_1vh_rgba(74,188,109,0.6)]' : 'bg-danger shadow-[0_0_1vh_rgba(240,82,82,0.6)]'}`} />
-            <span className={`text-[1.75vh] font-bold tracking-widest uppercase ${isConnected ? 'text-accent' : 'text-danger'}`}>
-              {isConnected ? 'Live' : 'Disconnected'}
+          <div className="flex items-center gap-2 md:gap-[0.8vw] bg-white/5 border border-white/10 px-3 py-1.5 md:px-[1.5vw] md:py-[1vh] rounded-full" >
+            <div className={`w-2.5 h-2.5 md:w-[1.5vh] md:h-[1.5vh] rounded-full ${isConnected ? 'bg-accent animate-pulse shadow-[0_0_1vh_rgba(74,188,109,0.6)]' : 'bg-danger shadow-[0_0_1vh_rgba(240,82,82,0.6)]'}`} />
+            <span className={`text-xs md:text-[1.75vh] font-bold tracking-widest uppercase ${isConnected ? 'text-accent' : 'text-danger'}`}>
+              <span className="hidden sm:inline">{isConnected ? 'Live' : 'Disconnected'}</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-[1vw] text-[4vh] font-display text-white drop-shadow-[0_0_1vh_rgba(255,255,255,0.3)]">
+          <div className="flex items-center gap-2 md:gap-[1vw] text-2xl md:text-[4vh] font-display text-white drop-shadow-[0_0_1vh_rgba(255,255,255,0.3)]">
             {currentTimeStr}
           </div>
         </div>
       </header>
 
-      <main className="flex-1 p-[2.5vh] flex flex-col items-center overflow-hidden bg-transparent">
-        <div className="grid grid-cols-2 grid-rows-2 gap-[2.5vh] h-full w-full max-w-[200vh]">
+      <main className="flex-1 p-4 md:p-[2.5vh] flex flex-col items-center overflow-y-auto overflow-x-hidden md:overflow-hidden bg-transparent">
+        <div className="grid grid-cols-1 md:grid-cols-2 grid-rows-none md:grid-rows-2 gap-4 md:gap-[2.5vh] h-auto md:h-full w-full max-w-[200vh]">
           {tables.map(table => {
             const isBusy = table.status === 'busy';
 
             if (isBusy) {
               const progress = getProgress(table.startTime, table.duration);
-              const elapsedMs = now - table.startTime;
               const remainingMs = (table.startTime + table.duration) - now;
               const totalRemainingMins = remainingMs / 60000;
 
               const isEnded = remainingMs <= 0;
               const isFinalMinutes = !isEnded && totalRemainingMins <= 3;
               const isEndingSoon = !isEnded && !isFinalMinutes && totalRemainingMins <= 10;
-              const isPlaying = !isEnded && !isFinalMinutes && !isEndingSoon;
 
               let cardBg = 'bg-white/[0.03] backdrop-blur-[2vh]';
               let cardBorder = 'border-white/10 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)]';
@@ -220,76 +218,76 @@ export default function TvDisplay() {
               }
 
               return (
-                <div key={table.id} className={`relative rounded-[3vh] overflow-hidden flex flex-col ${cardBg} border ${cardBorder} transition-colors duration-1000`}>
-                  <div className="p-[3.5vh] flex-1 flex flex-col z-10 relative">
+                <div key={table.id} className={`relative min-h-[220px] md:min-h-0 rounded-3xl md:rounded-[3vh] overflow-hidden flex flex-col ${cardBg} border ${cardBorder} transition-colors duration-1000`}>
+                  <div className="p-5 md:p-[3.5vh] flex-1 flex flex-col z-10 relative">
                     <div className="flex justify-between items-start">
-                      <h2 className="text-[6vh] font-display font-black text-white/60 tracking-tighter leading-none drop-shadow-sm">
+                      <h2 className="text-4xl md:text-[6vh] font-display font-black text-white/60 tracking-tighter leading-none drop-shadow-sm">
                         T{table.id}
                       </h2>
-                      <div className={`px-[2vh] py-[0.8vh] rounded-full border font-bold text-[1.5vh] tracking-widest uppercase ${badgeBg}`}>
+                      <div className={`px-3 py-1 md:px-[2vh] md:py-[0.8vh] rounded-full border font-bold text-[0.65rem] md:text-[1.5vh] tracking-widest uppercase ${badgeBg}`}>
                         {badgeText}
                       </div>
                     </div>
 
-                    <div className="flex-1 flex flex-col justify-center items-center text-center">
-                      <p className={`text-[1.8vh] font-bold uppercase tracking-widest mb-[0.5vh] ${isEnded || isFinalMinutes ? 'text-danger' : 'text-text-dim'}`}>
+                    <div className="flex-1 flex flex-col justify-center items-center text-center py-6 md:py-0">
+                      <p className={`text-xs md:text-[1.8vh] font-bold uppercase tracking-widest mb-1 md:mb-[0.5vh] ${isEnded || isFinalMinutes ? 'text-danger' : 'text-text-dim'}`}>
                         {isEnded ? 'Overdue By' : 'Time Left'}
                       </p>
-                      <p className={`text-[12vh] font-display font-medium tracking-tight leading-none tabular-nums ${timerColor} mt-[1vh]`}>
+                      <p className={`text-6xl md:text-[12vh] font-display font-medium tracking-tight leading-none tabular-nums ${timerColor} mt-2 md:mt-[1vh]`}>
                         {isEnded ? '00:00:00' : formatTimeRemaining(table.startTime, table.duration)}
                       </p>
                     </div>
 
-                    <div className="mt-auto border-t border-white/10 pt-[2vh] flex items-end justify-between">
+                    <div className="mt-auto border-t border-white/10 pt-3 md:pt-[2vh] flex items-end justify-between">
                       <div>
-                        <p className="text-text-dim text-[1.5vh] font-medium uppercase tracking-wider mb-[0.5vh]">Playing Now</p>
-                        <p className="text-[3vh] text-white font-bold tracking-tight truncate leading-none max-w-[20vw]">
+                        <p className="text-text-dim text-[0.65rem] md:text-[1.5vh] font-medium uppercase tracking-wider mb-1 md:mb-[0.5vh]">Playing Now</p>
+                        <p className="text-lg md:text-[3vh] text-white font-bold tracking-tight truncate leading-none max-w-[40vw] md:max-w-[20vw]">
                           {table.player}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-text-dim text-[1.5vh] font-medium uppercase tracking-wider mb-[0.5vh]">Session</p>
-                        <p className="text-[2.2vh] text-white/80 font-semibold tracking-wide leading-none">
+                        <p className="text-text-dim text-[0.65rem] md:text-[1.5vh] font-medium uppercase tracking-wider mb-1 md:mb-[0.5vh]">Session</p>
+                        <p className="text-sm md:text-[2.2vh] text-white/80 font-semibold tracking-wide leading-none">
                           {formatTimeRange(table.startTime, table.duration)}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="h-[0.3vh] w-full bg-black/30 relative z-10 flex-shrink-0">
+                  <div className="h-1 md:h-[0.3vh] w-full bg-black/30 relative z-10 flex-shrink-0">
                     <div
                       className={`h-full transition-all duration-1000 ease-linear ${progressColor}`}
                       style={{ width: `${progress}%` }}
                     />
                   </div>
 
-                  <div className={`absolute top-0 right-0 w-[30vh] h-[30vh] rounded-full blur-[20vh] pointer-events-none opacity-20 ${glowColor}`} />
+                  <div className={`absolute top-0 right-0 w-48 h-48 md:w-[30vh] md:h-[30vh] rounded-full blur-[64px] md:blur-[20vh] pointer-events-none opacity-20 ${glowColor}`} />
                 </div>
               );
             }
             // Render Available Card
             return (
-              <div key={table.id} className="relative rounded-[3vh] overflow-hidden flex flex-col bg-accent/[0.02] backdrop-blur-[2vh] border border-accent/20 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(74,188,109,0.15)] transition-colors duration-1000">
-                <div className="p-[3.5vh] flex-1 flex flex-col z-10 relative">
+              <div key={table.id} className="relative min-h-[220px] md:min-h-0 rounded-3xl md:rounded-[3vh] overflow-hidden flex flex-col bg-accent/[0.02] backdrop-blur-[2vh] border border-accent/20 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(74,188,109,0.15)] transition-colors duration-1000">
+                <div className="p-5 md:p-[3.5vh] flex-1 flex flex-col z-10 relative">
                   {/* HEADER */}
                   <div className="flex justify-between items-start">
-                    <h2 className="text-[6vh] font-display font-black text-white/60 tracking-tighter leading-none drop-shadow-sm">
+                    <h2 className="text-4xl md:text-[6vh] font-display font-black text-white/60 tracking-tighter leading-none drop-shadow-sm">
                       T{table.id}
                     </h2>
-                    <div className="px-[2vh] py-[0.8vh] rounded-full border border-accent/20 bg-accent/10 text-accent shadow-[inset_0_1px_1px_rgba(74,188,109,0.2)] font-bold text-[1.5vh] tracking-widest uppercase">
+                    <div className="px-3 py-1 md:px-[2vh] md:py-[0.8vh] rounded-full border border-accent/20 bg-accent/10 text-accent shadow-[inset_0_1px_1px_rgba(74,188,109,0.2)] font-bold text-[0.65rem] md:text-[1.5vh] tracking-widest uppercase">
                       AVAILABLE
                     </div>
                   </div>
 
                   {/* CENTER CONTENT */}
-                  <div className="flex-1 flex flex-col justify-center items-center text-center">
-                    <div className="w-[10vh] h-[10vh] rounded-full border border-accent/30 bg-accent/5 flex items-center justify-center mb-[3vh] shadow-[inset_0_1px_5px_rgba(74,188,109,0.2)]">
-                      <div className="w-[4vh] h-[4vh] rounded-full bg-accent/40 animate-pulse blur-[0.3vh]" />
+                  <div className="flex-1 flex flex-col justify-center items-center text-center py-6 md:py-0">
+                    <div className="w-16 h-16 md:w-[10vh] md:h-[10vh] rounded-full border border-accent/30 bg-accent/5 flex items-center justify-center mb-4 md:mb-[3vh] shadow-[inset_0_1px_5px_rgba(74,188,109,0.2)]">
+                      <div className="w-6 h-6 md:w-[4vh] md:h-[4vh] rounded-full bg-accent/40 animate-pulse blur-sm md:blur-[0.3vh]" />
                     </div>
-                    <h3 className="text-[4vh] font-display font-light text-white/80 tracking-widest uppercase mb-[1vh] drop-shadow-md">
+                    <h3 className="text-2xl md:text-[4vh] font-display font-light text-white/80 tracking-widest uppercase mb-2 md:mb-[1vh] drop-shadow-md">
                       Ready to Play
                     </h3>
-                    <p className="text-accent/80 text-[1.8vh] font-medium tracking-widest uppercase max-w-[80%] leading-relaxed">
+                    <p className="text-accent/80 text-xs md:text-[1.8vh] font-medium tracking-widest uppercase max-w-[90%] md:max-w-[80%] leading-relaxed">
                       Please visit the front desk to start a session
                     </p>
                   </div>
