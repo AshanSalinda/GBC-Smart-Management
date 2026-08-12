@@ -7,10 +7,10 @@ const MOCK_TABLES = [
   { id: 1, type: 'Pro Pool', status: 'busy', player: 'Rahul Mehta', startTime: Date.now() - 55000, duration: 60 * 60000 },
 
   // T2: 10m 5s left -> Starts as "PLAYING", becomes "ENDING SOON" in 5s
-  { id: 2, type: 'Snooker', status: 'busy', player: 'Sarah Connor', startTime: Date.now() - (30 * 60000 + 55000), duration: 60 * 60000 },
+  { id: 2, type: 'Snooker', status: 'busy', player: 'Sarah Connor', startTime: Date.now() - (49 * 60000 + 55000), duration: 60 * 60000 },
 
   // T3: 0m 5s left -> Starts as "FINAL MINUTES", becomes "TIME UP" in 5s
-  { id: 3, type: 'Pro Pool', status: 'busy', player: 'Alex Rivera', startTime: Date.now() - (30 * 60000 + 55000), duration: 60 * 60000 },
+  { id: 3, type: 'Pro Pool', status: 'busy', player: 'Alex Rivera', startTime: Date.now() - (56 * 60000 + 55000), duration: 60 * 60000 },
 
   // T4: Available (No Session)
   { id: 4, type: 'Carom', status: 'available', player: null, startTime: null, duration: null }
@@ -173,8 +173,13 @@ export default function TvDisplay() {
   });
 
   return (
-    <div className="h-screen w-screen bg-[#0a0a0a] text-text-main font-sans overflow-hidden flex flex-col selection:bg-transparent cursor-none">
-      <header className="px-[4vw] py-[2vh] flex items-center justify-between border-b border-white/5 bg-[#101010] flex-shrink-0 z-20 shadow-lg">
+    <div className="h-screen w-screen bg-[#070709] text-text-main font-sans overflow-hidden flex flex-col selection:bg-transparent cursor-none relative z-0">
+      {/* Global Background Blobs for Glassmorphism */}
+      <div className="absolute top-0 left-1/3 w-[60vw] h-[60vw] bg-white/[0.02] rounded-full blur-[15vh] pointer-events-none -translate-y-1/2 -z-10" />
+      <div className="absolute bottom-0 right-1/4 w-[50vw] h-[50vw] bg-accent/[0.03] rounded-full blur-[15vh] pointer-events-none translate-y-1/2 -z-10" />
+
+      {/* Top Header - TV style */}
+      <header className="px-[4vw] py-[2vh] flex items-center justify-between border-b border-white/5 bg-[#101010]/80 backdrop-blur-md flex-shrink-0 z-20 shadow-lg">
         <div className="flex items-center gap-[1vw]">
           <div className="w-[6vh] h-[6vh] bg-accent text-bg font-display font-bold text-[3vh] flex items-center justify-center rounded-[1.5vh] shadow-[0_0_2vh_rgba(74,188,109,0.2)]">
             B
@@ -185,13 +190,13 @@ export default function TvDisplay() {
           </div>
         </div>
 
-        <div className="flex items-center gap-[1vw] text-[4vh] font-display font-bold text-white tracking-tight">
+        <div className="flex items-center gap-[1vw] text-[4vh] font-display font-bold text-white tracking-tight drop-shadow-[0_0_1vh_rgba(255,255,255,0.3)]">
           <Clock className="text-accent w-[4vh] h-[4vh]" />
           {currentTimeStr}
         </div>
       </header>
 
-      <main className="flex-1 p-[3vh] flex flex-col overflow-hidden bg-bg">
+      <main className="flex-1 p-[3vh] flex flex-col overflow-hidden bg-transparent">
         <div className="grid grid-cols-2 grid-rows-2 gap-[3vh] h-full w-full">
           {tables.map(table => {
             const isBusy = table.status === 'busy';
@@ -207,58 +212,62 @@ export default function TvDisplay() {
               const isEndingSoon = !isEnded && !isFinalMinutes && totalRemainingMins <= 10;
               const isPlaying = !isEnded && !isFinalMinutes && !isEndingSoon;
 
-              let cardBorder = 'border-white/10 shadow-[0_4vh_6vh_rgba(0,0,0,0.4)]';
-              let badgeBg = 'bg-white/5 text-text-muted border-white/10';
+              let cardBg = 'bg-white/[0.03] backdrop-blur-[2vh]';
+              let cardBorder = 'border-white/10 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)]';
+              let badgeBg = 'bg-white/5 text-white/70 border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]';
               let badgeText = 'IN PLAY';
-              let timerColor = 'text-white';
-              let progressColor = 'bg-white/70';
-              let glowColor = 'bg-white opacity-[0.03]';
+              let timerColor = 'text-white/90 drop-shadow-[0_0_2vh_rgba(255,255,255,0.15)]';
+              let progressColor = 'bg-white/40';
+              let glowColor = 'bg-white opacity-5';
 
               if (isEndingSoon) {
-                cardBorder = 'border-[#ff9f43]/60 shadow-[0_0_4vh_rgba(255,159,67,0.15)]';
+                cardBg = 'bg-[#ff9f43]/[0.05] backdrop-blur-[2vh]';
+                cardBorder = 'border-[#ff9f43]/40 shadow-[0_0_4vh_rgba(255,159,67,0.15),inset_0_1px_1px_rgba(255,159,67,0.2)]';
                 badgeBg = 'bg-[#ff9f43]/20 text-[#ff9f43] border-[#ff9f43]/40';
                 badgeText = 'ENDING SOON';
-                timerColor = 'text-[#ff9f43]';
+                timerColor = 'text-[#ff9f43] drop-shadow-[0_0_2vh_rgba(255,159,67,0.3)]';
                 progressColor = 'bg-[#ff9f43]';
                 glowColor = 'bg-[#ff9f43] opacity-20';
               } else if (isFinalMinutes) {
-                cardBorder = 'border-[#ff4757]/80 shadow-[0_0_5vh_rgba(255,71,87,0.25)]';
+                cardBg = 'bg-[#ff4757]/[0.05] backdrop-blur-[2vh]';
+                cardBorder = 'border-[#ff4757]/60 shadow-[0_0_5vh_rgba(255,71,87,0.25),inset_0_1px_1px_rgba(255,71,87,0.3)]';
                 badgeBg = 'bg-[#ff4757]/20 text-[#ff4757] border-[#ff4757]/40 animate-pulse';
                 badgeText = 'FINAL MINS';
-                timerColor = 'text-[#ff4757]';
+                timerColor = 'text-[#ff4757] drop-shadow-[0_0_2vh_rgba(255,71,87,0.4)]';
                 progressColor = 'bg-[#ff4757]';
                 glowColor = 'bg-[#ff4757] opacity-30';
               } else if (isEnded) {
-                cardBorder = 'border-danger shadow-[0_0_6vh_rgba(240,82,82,0.4)]';
+                cardBg = 'bg-danger/[0.08] backdrop-blur-[2vh]';
+                cardBorder = 'border-danger shadow-[0_0_6vh_rgba(240,82,82,0.4),inset_0_1px_1px_rgba(240,82,82,0.5)]';
                 badgeBg = 'bg-danger text-white border-danger animate-pulse';
                 badgeText = 'TIME UP';
-                timerColor = 'text-danger animate-pulse';
+                timerColor = 'text-danger animate-pulse drop-shadow-[0_0_3vh_rgba(240,82,82,0.5)]';
                 progressColor = 'bg-danger';
                 glowColor = 'bg-danger opacity-40';
               }
 
               return (
-                <div key={table.id} className={`relative rounded-[3vh] overflow-hidden flex flex-col bg-[#141414] border ${cardBorder} transition-colors duration-1000`}>
-                  <div className="p-[4vh] flex-1 flex flex-col z-10 relative">
+                <div key={table.id} className={`relative rounded-[3vh] overflow-hidden flex flex-col ${cardBg} border ${cardBorder} transition-colors duration-1000`}>
+                  <div className="p-[3.5vh] flex-1 flex flex-col z-10 relative">
                     <div className="flex justify-between items-start">
-                      <h2 className="text-[7vh] font-display font-black text-white/80 tracking-tighter leading-none">
+                      <h2 className="text-[6vh] font-display font-black text-white/80 tracking-tighter leading-none drop-shadow-sm">
                         T{table.id}
                       </h2>
-                      <div className={`px-[2.5vh] py-[1vh] rounded-full border font-bold text-[1.8vh] tracking-widest uppercase ${badgeBg}`}>
+                      <div className={`px-[2vh] py-[0.8vh] rounded-full border font-bold text-[1.5vh] tracking-widest uppercase ${badgeBg}`}>
                         {badgeText}
                       </div>
                     </div>
 
                     <div className="flex-1 flex flex-col justify-center items-center text-center">
-                      <p className={`text-[2.2vh] font-bold uppercase tracking-widest mb-[1vh] ${isEnded || isFinalMinutes ? 'text-danger' : 'text-text-dim'}`}>
+                      <p className={`text-[1.8vh] font-bold uppercase tracking-widest mb-[0.5vh] ${isEnded || isFinalMinutes ? 'text-danger' : 'text-text-dim'}`}>
                         {isEnded ? 'Overdue By' : 'Time Left'}
                       </p>
-                      <p className={`text-[13vh] font-display font-black tracking-tighter leading-none tabular-nums ${timerColor}`}>
+                      <p className={`text-[11vh] font-display font-bold tracking-tight leading-none tabular-nums ${timerColor}`}>
                         {isEnded ? '00:00:00' : formatTimeRemaining(table.startTime, table.duration)}
                       </p>
                     </div>
 
-                    <div className="mt-auto border-t border-white/10 pt-[3vh] pb-[0.5vh] flex items-end justify-between">
+                    <div className="mt-auto border-t border-white/10 pt-[2vh] flex items-end justify-between">
                       <div>
                         <p className="text-text-dim text-[1.5vh] font-medium uppercase tracking-wider mb-[0.5vh]">Playing Now</p>
                         <p className="text-[3vh] text-white font-bold tracking-tight truncate leading-none max-w-[20vw]">
@@ -274,23 +283,23 @@ export default function TvDisplay() {
                     </div>
                   </div>
 
-                  <div className="h-[1.5vh] w-full bg-black relative z-10 flex-shrink-0">
+                  <div className="h-[0.5vh] w-full bg-black/30 relative z-10 flex-shrink-0">
                     <div
                       className={`h-full transition-all duration-1000 ease-linear ${progressColor}`}
                       style={{ width: `${progress}%` }}
                     />
                   </div>
 
-                  <div className={`absolute top-0 right-0 w-[30vh] h-[30vh] rounded-full blur-[8vh] pointer-events-none opacity-20 ${glowColor}`} />
+                  <div className={`absolute top-0 right-0 w-[30vh] h-[30vh] rounded-full blur-[20vh] pointer-events-none opacity-20 ${glowColor}`} />
                 </div>
               );
             }
 
             return (
-              <div key={table.id} className="relative rounded-[3vh] overflow-hidden flex flex-col bg-[#111612] border border-accent/10 shadow-[inset_0_0_8vh_rgba(74,188,109,0.02)] transition-colors duration-1000">
+              <div key={table.id} className="relative rounded-[3vh] overflow-hidden flex flex-col bg-white/[0.01] backdrop-blur-[2vh] border border-accent/20 shadow-[inset_0_1px_1px_rgba(74,188,109,0.1)] transition-colors duration-1000">
                 <div className="p-[4vh] flex-1 flex flex-col z-10 relative">
                   <div className="flex justify-between items-start">
-                    <h2 className="text-[7vh] font-display font-black text-white/40 tracking-tighter leading-none">
+                    <h2 className="text-[7vh] font-display font-black text-white/50 tracking-tighter leading-none drop-shadow-md">
                       T{table.id}
                     </h2>
                   </div>
