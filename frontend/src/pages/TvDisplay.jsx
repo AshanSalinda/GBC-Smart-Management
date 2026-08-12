@@ -4,13 +4,13 @@ import { Clock } from 'lucide-react';
 // MOCK DATA: Configured to demonstrate live transitions 5 seconds after page load!
 const MOCK_TABLES = [
   // T1: 55s elapsed -> Starts as "STARTED", becomes "PLAYING" in 5s
-  { id: 1, type: 'Pro Pool', status: 'busy', player: 'Rahul Mehta', startTime: Date.now() - 50000, duration: 60 * 60000 },
+  { id: 1, type: 'Pro Pool', status: 'busy', player: 'Rahul Mehta', startTime: Date.now() - 55000, duration: 60 * 60000 },
 
   // T2: 10m 5s left -> Starts as "PLAYING", becomes "ENDING SOON" in 5s
-  { id: 2, type: 'Snooker', status: 'busy', player: 'Sarah Connor', startTime: Date.now() - (49 * 60000 + 55000), duration: 60 * 60000 },
+  { id: 2, type: 'Snooker', status: 'busy', player: 'Sarah Connor', startTime: Date.now() - (30 * 60000 + 55000), duration: 60 * 60000 },
 
   // T3: 0m 5s left -> Starts as "FINAL MINUTES", becomes "TIME UP" in 5s
-  { id: 3, type: 'Pro Pool', status: 'busy', player: 'Alex Rivera', startTime: Date.now() - (59 * 60000 + 55000), duration: 60 * 60000 },
+  { id: 3, type: 'Pro Pool', status: 'busy', player: 'Alex Rivera', startTime: Date.now() - (30 * 60000 + 55000), duration: 60 * 60000 },
 
   // T4: Available (No Session)
   { id: 4, type: 'Carom', status: 'available', player: null, startTime: null, duration: null }
@@ -205,43 +205,36 @@ export default function TvDisplay() {
               const isEnded = remainingMs <= 0;
               const isFinalMinutes = !isEnded && totalRemainingMins <= 3;
               const isEndingSoon = !isEnded && !isFinalMinutes && totalRemainingMins <= 10;
-              const isJustStarted = !isEnded && elapsedMs <= 60000;
+              const isPlaying = !isEnded && !isFinalMinutes && !isEndingSoon;
 
-              let cardBorder = 'border-white/10 shadow-lg';
-              let badgeBg = 'bg-white/10 text-white/70 border-white/20';
+              let cardBorder = 'border-white/10 shadow-[0_4vh_6vh_rgba(0,0,0,0.4)]';
+              let badgeBg = 'bg-white/5 text-text-muted border-white/10';
               let badgeText = 'IN PLAY';
               let timerColor = 'text-white';
-              let progressColor = 'bg-white';
-              let glowColor = 'bg-transparent';
+              let progressColor = 'bg-white/70';
+              let glowColor = 'bg-white opacity-[0.03]';
 
-              if (isJustStarted) {
-                cardBorder = 'border-[#38bdf8]/40 shadow-[0_0_30px_rgba(56,189,248,0.2)]';
-                badgeBg = 'bg-[#38bdf8]/20 text-[#38bdf8] border-[#38bdf8]/40 animate-pulse';
-                badgeText = 'STARTED';
-                timerColor = 'text-[#38bdf8]';
-                progressColor = 'bg-[#38bdf8]';
-                glowColor = 'bg-[#38bdf8]';
-              } else if (isEndingSoon) {
-                cardBorder = 'border-[#ff9f43] shadow-[0_0_30px_rgba(255,159,67,0.2)]';
+              if (isEndingSoon) {
+                cardBorder = 'border-[#ff9f43]/60 shadow-[0_0_4vh_rgba(255,159,67,0.15)]';
                 badgeBg = 'bg-[#ff9f43]/20 text-[#ff9f43] border-[#ff9f43]/40';
                 badgeText = 'ENDING SOON';
                 timerColor = 'text-[#ff9f43]';
                 progressColor = 'bg-[#ff9f43]';
-                glowColor = 'bg-[#ff9f43]';
+                glowColor = 'bg-[#ff9f43] opacity-20';
               } else if (isFinalMinutes) {
-                cardBorder = 'border-[#ff4757] shadow-[0_0_40px_rgba(255,71,87,0.3)]';
+                cardBorder = 'border-[#ff4757]/80 shadow-[0_0_5vh_rgba(255,71,87,0.25)]';
                 badgeBg = 'bg-[#ff4757]/20 text-[#ff4757] border-[#ff4757]/40 animate-pulse';
                 badgeText = 'FINAL MINS';
                 timerColor = 'text-[#ff4757]';
                 progressColor = 'bg-[#ff4757]';
-                glowColor = 'bg-[#ff4757]';
+                glowColor = 'bg-[#ff4757] opacity-30';
               } else if (isEnded) {
-                cardBorder = 'border-danger shadow-[0_0_50px_rgba(240,82,82,0.4)]';
+                cardBorder = 'border-danger shadow-[0_0_6vh_rgba(240,82,82,0.4)]';
                 badgeBg = 'bg-danger text-white border-danger animate-pulse';
                 badgeText = 'TIME UP';
                 timerColor = 'text-danger animate-pulse';
                 progressColor = 'bg-danger';
-                glowColor = 'bg-danger';
+                glowColor = 'bg-danger opacity-40';
               }
 
               return (
