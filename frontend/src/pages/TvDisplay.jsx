@@ -167,7 +167,7 @@ export default function TvDisplay() {
   };
 
   const currentTimeStr = new Date(now).toLocaleTimeString('en-US', {
-    hour: 'numeric',
+    hour: '2-digit',
     minute: '2-digit',
     hour12: true
   });
@@ -190,8 +190,7 @@ export default function TvDisplay() {
           </div>
         </div>
 
-        <div className="flex items-center gap-[1vw] text-[4vh] font-display font-bold text-white tracking-tight drop-shadow-[0_0_1vh_rgba(255,255,255,0.3)]">
-          <Clock className="text-accent w-[4vh] h-[4vh]" />
+        <div className="flex items-center gap-[1vw] text-[4vh] font-display text-white drop-shadow-[0_0_1vh_rgba(255,255,255,0.3)]">
           {currentTimeStr}
         </div>
       </header>
@@ -262,7 +261,7 @@ export default function TvDisplay() {
                       <p className={`text-[1.8vh] font-bold uppercase tracking-widest mb-[0.5vh] ${isEnded || isFinalMinutes ? 'text-danger' : 'text-text-dim'}`}>
                         {isEnded ? 'Overdue By' : 'Time Left'}
                       </p>
-                      <p className={`text-[11vh] font-display font-bold tracking-tight leading-none tabular-nums ${timerColor}`}>
+                      <p className={`text-[12vh] font-display font-medium tracking-tight leading-none tabular-nums ${timerColor} mt-[1vh]`}>
                         {isEnded ? '00:00:00' : formatTimeRemaining(table.startTime, table.duration)}
                       </p>
                     </div>
