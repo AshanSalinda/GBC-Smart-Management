@@ -1,1 +1,69 @@
 @import "tailwindcss";
+
+@theme {
+  /* Colors */
+  --color-bg: #0e0e10;
+  --color-bg-elevated: #161618;
+  --color-card: #1a1a1d;
+  --color-card-hover: #222226;
+
+  --color-border: #2a2a2e;
+  --color-border-light: #3a3a40;
+
+  --color-text-main: #f4f4f5;
+  --color-text-muted: #a1a1aa;
+  --color-text-dim: #71717a;
+
+  --color-accent: #1f8a4c;
+  --color-accent-bright: #2db86a;
+  --color-accent-dim: #166b3a;
+  --color-accent-glow: rgba(31, 138, 76, 0.28);
+
+  --color-gold: #c9a84c;
+  --color-gold-dim: #a88b3a;
+  --color-gold-glow: rgba(201, 168, 76, 0.22);
+
+  --color-busy: #e05c5c;
+  --color-busy-dim: #c44a4a;
+  --color-warning: #d4a017;
+  --color-warning-glow: rgba(212, 160, 23, 0.35);
+  --color-danger: #e05c5c;
+  --color-danger-glow: rgba(224, 92, 92, 0.4);
+  --color-paid: #1f8a4c;
+  --color-unpaid: #c9a84c;
+  --color-ended: #6b6b72;
+
+  --color-light-on: #f0e6a8;
+  --color-light-on-glow: rgba(240, 230, 168, 0.45);
+
+  --color-panel: #121214;
+  --color-panel-elevated: #1a1a1d;
+
+  /* Focus Ring */
+  --color-ring: var(--color-gold);
+  --color-ring-glow: var(--color-gold-glow);
+
+  /* Typography */
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-display: 'Instrument Sans', 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Shadows */
+  --shadow-glow: 0 12px 40px -8px rgba(0, 0, 0, 0.55), 0 4px 12px -4px rgba(0, 0, 0, 0.35);
+  --shadow-accent: 0 0 20px var(--color-accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+
+  /* Radius */
+  --radius-base: 16px;
+  --radius-sm: 11px;
+}
+
+/* Global Styles */
+@layer base {
+  body {
+    @apply bg-bg text-text-main font-sans antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(31, 138, 76, 0.07), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 0%, rgba(201, 168, 76, 0.04), transparent);
+    min-height: 100vh;
+  }
+}

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingFallback from './components/LoadingFallback';
+import MainLayout from './components/layout/MainLayout';
 
 // Eagerly loaded components
 import Home from './pages/Home';
@@ -21,11 +22,11 @@ export default function App() {
       <BrowserRouter>
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
-            {/* Public Routes */}
+            {/* Public Routes - No App Shell */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             
-            {/* TV Display Route */}
+            {/* TV Display Route - Full Screen Read-Only */}
             <Route 
               path="/tv-display" 
               element={
@@ -35,43 +36,41 @@ export default function App() {
               } 
             />
 
-            {/* Staff & Admin Routes */}
-            <Route 
-              path="/bookings" 
-              element={
-                <ProtectedRoute allowedRoles={['staff', 'admin']}>
-                  <Bookings />
-                </ProtectedRoute>
-              } 
-            />
-
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute allowedRoles={['staff', 'admin']}>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-
-            <Route 
-              path="/lights-control" 
-              element={
-                <ProtectedRoute allowedRoles={['staff', 'admin']}>
-                  <LightsControl />
-                </ProtectedRoute>
-              } 
-            />
-
-            {/* Admin Only Route */}
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <Admin />
-                </ProtectedRoute>
-              } 
-            />
+            {/* Authenticated Routes - Wrapped in MainLayout App Shell */}
+            <Route element={<MainLayout />}>
+              <Route 
+                path="/bookings" 
+                element={
+                  <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                    <Bookings />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/lights-control" 
+                element={
+                  <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                    <LightsControl />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <Admin />
+                  </ProtectedRoute>
+                } 
+              />
+            </Route>
           </Routes>
         </Suspense>
       </BrowserRouter>
