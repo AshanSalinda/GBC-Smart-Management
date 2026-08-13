@@ -62,7 +62,7 @@ function HeaderClock({ isConnected, onToggleConnection }) {
   });
 
   return (
-    <header className="px-4 py-4 md:px-[4vw] md:py-[2vh] flex items-center justify-between border-b border-white/5 bg-[#101010]/80 backdrop-blur-md flex-shrink-0 z-20 shadow-lg">
+    <header className="px-4 py-4 md:px-[4vw] md:py-[2vh] flex items-center justify-between border-b border-white/5 bg-black backdrop-blur-md flex-shrink-0 z-20 shadow-lg">
       <div className="flex items-center gap-3 md:gap-[1vw]">
         <div className="w-8 h-8 md:w-[6vh] md:h-[6vh] bg-accent text-bg font-display font-bold text-xs md:text-lg md:text-[2.2vh] flex items-center justify-center rounded-xl md:rounded-[1.5vh] shadow-[0_0_2vh_rgba(74,188,109,0.2)]">
           GBC
@@ -194,13 +194,13 @@ function TableCard({ table, onAutoReset, previousStatesRef }) {
 
 
   // Determine Colors
-  let cardBg = 'bg-white/[0.03] md:backdrop-blur-[2vh]';
-  let cardBorder = 'border-white/10 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)]';
+  let cardBg = 'bg-gray-500/[0.03] md:backdrop-blur-[2vh]';
+  let cardBorder = 'border-gray-500/30 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)]';
   let badgeBg = 'bg-white/5 text-white/70 border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]';
   let badgeText = 'IN PLAY';
-  let timerColor = 'text-white/90 drop-shadow-[0_0_2vh_rgba(255,255,255,0.15)]';
-  let progressColor = 'bg-white/40';
-  let glowColor = 'bg-white opacity-5';
+  let timerColor = 'text-gray-300 drop-shadow-[0_0_2vh_rgba(255,255,255,0.15)]';
+  let progressColor = 'bg-gray-500';
+  let glowColor = 'bg-gray-500 opacity-40';
 
   if (isEndingSoon) {
     cardBg = 'bg-[#ff9f43]/[0.03] md:backdrop-blur-[2vh]';
@@ -232,7 +232,7 @@ function TableCard({ table, onAutoReset, previousStatesRef }) {
     <div className={`relative min-h-[220px] md:min-h-0 rounded-3xl md:rounded-[3vh] overflow-hidden flex flex-col ${cardBg} border ${cardBorder} transition-colors duration-1000`}>
       <div className="p-5 md:p-[3.5vh] flex-1 flex flex-col z-10 relative">
         <div className="flex justify-between items-start">
-          <h2 className="text-4xl md:text-[6vh] font-display font-black text-white/60 tracking-tighter leading-none drop-shadow-sm">
+          <h2 className="text-4xl md:text-[6vh] font-display font-black text-white/40 tracking-tighter leading-none drop-shadow-sm">
             T{table.id}
           </h2>
           <div className={`px-3 py-1 md:px-[2vh] md:py-[0.8vh] rounded-full border font-bold text-[0.65rem] md:text-[1.5vh] tracking-widest uppercase ${badgeBg}`}>
@@ -249,10 +249,10 @@ function TableCard({ table, onAutoReset, previousStatesRef }) {
           </p>
         </div>
 
-        <div className="mt-auto border-t border-white/10 pt-3 md:pt-[2vh] flex items-end justify-between">
+        <div className="mt-auto border-t border-gray-500/40 pt-3 md:pt-[2vh] flex items-end justify-between">
           <div>
             <p className="text-text-dim text-[0.65rem] md:text-[1.5vh] font-medium uppercase tracking-wider mb-1 md:mb-[0.5vh]">Playing Now</p>
-            <p className="text-lg md:text-[3vh] text-white font-bold tracking-tight truncate leading-none max-w-[40vw] md:max-w-[20vw]">
+            <p className="text-lg md:text-[3vh] text-white/80 font-bold tracking-tight truncate leading-none max-w-[40vw] md:max-w-[20vw]">
               {table.player}
             </p>
           </div>
