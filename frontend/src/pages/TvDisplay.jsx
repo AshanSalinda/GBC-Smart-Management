@@ -155,7 +155,7 @@ function TableCard({ table, onAutoReset, previousStatesRef }) {
   if (!isBusy) {
     // Render Available Card
     return (
-      <div className="relative min-h-[220px] md:min-h-0 rounded-3xl md:rounded-[3vh] overflow-hidden flex flex-col bg-accent/[0.02] md:backdrop-blur-[2vh] border border-accent/20 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(74,188,109,0.15)] transition-colors duration-1000">
+      <div className="relative min-h-[220px] md:min-h-0 rounded-3xl md:rounded-[3vh] overflow-hidden flex flex-col bg-accent/[0.04] md:backdrop-blur-[2vh] border border-accent/20 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(74,188,109,0.15)] transition-colors duration-1000">
         <div className="p-5 md:p-[3.5vh] flex-1 flex flex-col z-10 relative">
           <div className="flex justify-between items-start">
             <h2 className="text-4xl md:text-[6vh] font-display font-black text-white/60 tracking-tighter leading-none drop-shadow-sm">
@@ -196,7 +196,7 @@ function TableCard({ table, onAutoReset, previousStatesRef }) {
   // Determine Colors
   let cardBg = 'bg-gray-500/[0.03] md:backdrop-blur-[2vh]';
   let cardBorder = 'border-gray-500/30 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)]';
-  let badgeBg = 'bg-white/5 text-white/70 border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]';
+  let badgeBg = 'bg-gray-500/20 text-white/70 border-gray-300/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]';
   let badgeText = 'IN PLAY';
   let timerColor = 'text-gray-300 drop-shadow-[0_0_2vh_rgba(255,255,255,0.15)]';
   let progressColor = 'bg-gray-500';
