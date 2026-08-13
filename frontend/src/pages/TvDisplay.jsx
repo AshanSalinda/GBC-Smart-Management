@@ -48,7 +48,7 @@ const getProgress = (start, duration, now) => {
 // --- HEADER CLOCK COMPONENT ---
 function HeaderClock({ isConnected, onToggleConnection }) {
   const [now, setNow] = useState(Date.now());
-  
+
   // Use a standard slow tick since this only shows minutes
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -133,22 +133,22 @@ function TableCard({ table, onAutoReset, previousStatesRef }) {
       SoundSystem.playStarted();
       prevState.alertedStarted = true;
     }
-    
+
     if (totalSeconds <= 600 && totalSeconds > 180 && !prevState.alertedEndingSoon) {
       SoundSystem.playEndingSoon();
       prevState.alertedEndingSoon = true;
     }
-    
+
     if (totalSeconds <= 180 && totalSeconds > 0 && !prevState.alertedFinal) {
       SoundSystem.playFinalMinutes();
       prevState.alertedFinal = true;
     }
-    
+
     if (totalSeconds <= 0 && !prevState.alertedEnded) {
       SoundSystem.playEnded();
       prevState.alertedEnded = true;
     }
-    
+
     previousStatesRef.current[table.id] = prevState;
   }, [isBusy, now, table.id, elapsed, totalSeconds, remainingMs, onAutoReset, previousStatesRef]);
 
@@ -232,7 +232,7 @@ function TableCard({ table, onAutoReset, previousStatesRef }) {
     <div className={`relative min-h-[220px] md:min-h-0 rounded-3xl md:rounded-[3vh] overflow-hidden flex flex-col ${cardBg} border ${cardBorder} transition-colors duration-1000`}>
       <div className="p-5 md:p-[3.5vh] flex-1 flex flex-col z-10 relative">
         <div className="flex justify-between items-start">
-          <h2 className="text-4xl md:text-[6vh] font-display font-black text-white/40 tracking-tighter leading-none drop-shadow-sm">
+          <h2 className="text-4xl md:text-[6vh] font-display font-black text-white/50 tracking-tighter leading-none drop-shadow-sm">
             T{table.id}
           </h2>
           <div className={`px-3 py-1 md:px-[2vh] md:py-[0.8vh] rounded-full border font-bold text-[0.65rem] md:text-[1.5vh] tracking-widest uppercase ${badgeBg}`}>
@@ -331,7 +331,7 @@ export default function TvDisplay() {
 
   return (
     <div className="h-screen w-screen bg-[#070709] text-text-main font-sans overflow-hidden flex flex-col selection:bg-transparent cursor-none relative z-0">
-      
+
       {/* Global Background Blobs for Glassmorphism */}
       <div className="hidden md:block absolute top-0 left-1/3 w-[60vw] h-[60vw] bg-white/[0.02] rounded-full blur-[15vh] pointer-events-none -translate-y-1/2 -z-10" />
       <div className="hidden md:block absolute bottom-0 right-1/4 w-[50vw] h-[50vw] bg-accent/[0.03] rounded-full blur-[15vh] pointer-events-none translate-y-1/2 -z-10" />
@@ -343,11 +343,11 @@ export default function TvDisplay() {
         <div className="grid grid-cols-1 md:grid-cols-2 grid-rows-none md:grid-rows-2 gap-4 md:gap-[2.5vh] h-auto md:h-full w-full max-w-[200vh]">
           {tables.map(table => (
             /* Extracted Table Card Component */
-            <TableCard 
-              key={table.id} 
-              table={table} 
-              onAutoReset={handleAutoReset} 
-              previousStatesRef={previousStates} 
+            <TableCard
+              key={table.id}
+              table={table}
+              onAutoReset={handleAutoReset}
+              previousStatesRef={previousStates}
             />
           ))}
         </div>
