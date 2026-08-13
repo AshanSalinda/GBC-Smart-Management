@@ -158,7 +158,7 @@ function TableCard({ table, onAutoReset, previousStatesRef }) {
       <div className="relative min-h-[220px] md:min-h-0 rounded-3xl md:rounded-[3vh] overflow-hidden flex flex-col bg-accent/[0.04] md:backdrop-blur-[2vh] border border-accent/20 shadow-[0_2vh_4vh_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(74,188,109,0.15)] transition-colors duration-1000">
         <div className="p-5 md:p-[3.5vh] flex-1 flex flex-col z-10 relative">
           <div className="flex justify-between items-start">
-            <h2 className="text-4xl md:text-[6vh] font-display font-black text-white/60 tracking-tighter leading-none drop-shadow-sm">
+            <h2 className="text-4xl md:text-[6vh] font-display font-black text-white/50 tracking-tighter leading-none drop-shadow-sm">
               T{table.id}
             </h2>
             <div className="px-3 py-1 md:px-[2vh] md:py-[0.8vh] rounded-full border border-accent/20 bg-accent/10 text-accent shadow-[inset_0_1px_1px_rgba(74,188,109,0.2)] font-bold text-[0.65rem] md:text-[1.5vh] tracking-widest uppercase">
