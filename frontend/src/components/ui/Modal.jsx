@@ -51,7 +51,7 @@ export default function Modal({
 
       {/* Modal Container */}
       <div
-        className={`relative flex flex-col bg-[#18181b] border border-[#2a2a2e] rounded-4xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] w-full max-w-sm max-h-[calc(100dvh-2rem)] sm:max-h-[85vh] overflow-hidden ${className}`}
+        className={`relative flex flex-col bg-[#18181b] border border-[#2a2a2e] rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] w-full max-w-sm max-h-[calc(100dvh-2rem)] sm:max-h-[85vh] overflow-hidden ${className}`}
       >
         {/* Scrollable Content Area */}
         <div className="overflow-y-auto p-6 h-full w-full">
