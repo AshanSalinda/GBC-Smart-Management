@@ -7,19 +7,42 @@ export default function BookingTimeline({ tables, bookings = [] }) {
   const scrollContainerRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(Date.now());
 
-  // Central clock that ticks at the exact start of every minute
+  // Central clock that ticks at the exact start of every minute, handling background tab throttling
   useEffect(() => {
     let interval;
-    const msUntilNextMinute = 60000 - (Date.now() % 60000);
-    
-    const timeout = setTimeout(() => {
+    let timeout;
+
+    const syncClock = () => {
+      if (timeout) clearTimeout(timeout);
+      if (interval) clearInterval(interval);
+
+      // Force an immediate time update to catch up
       setCurrentTime(Date.now());
-      interval = setInterval(() => setCurrentTime(Date.now()), 60000);
-    }, msUntilNextMinute);
+
+      const msUntilNextMinute = 60000 - (Date.now() % 60000);
+
+      timeout = setTimeout(() => {
+        setCurrentTime(Date.now());
+        interval = setInterval(() => setCurrentTime(Date.now()), 60000);
+      }, msUntilNextMinute);
+    };
+
+    // Initial sync on mount
+    syncClock();
+
+    // Re-sync whenever the user comes back to the tab
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncClock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      clearTimeout(timeout);
+      if (timeout) clearTimeout(timeout);
       if (interval) clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
@@ -73,7 +96,7 @@ export default function BookingTimeline({ tables, bookings = [] }) {
                 style={{ left: `${h.left}px`, transform: 'translateX(-50%)' }}
               >
                 {h.type === 'hour' && (
-                  <span 
+                  <span
                     className="text-[0.7rem] text-text-dim font-medium whitespace-nowrap pointer-events-none tracking-[0.01em] [font-variant-numeric:tabular-nums] mb-1"
                     style={{
                       transform: h.left === 0 ? 'translateX(50%)' : (h.left === totalWidth ? 'translateX(-50%)' : 'none')
@@ -83,12 +106,11 @@ export default function BookingTimeline({ tables, bookings = [] }) {
                   </span>
                 )}
                 {/* Marker Tick */}
-                <div 
-                  className={`w-[2px] bg-[#2a2a2e] ${
-                    h.type === 'hour' ? 'h-[12px]' : 
-                    h.type === 'half' ? 'h-[6px]' : 
-                    'h-[3px]'
-                  }`} 
+                <div
+                  className={`w-[2px] bg-[#2a2a2e] ${h.type === 'hour' ? 'h-[18px]' :
+                    h.type === 'half' ? 'h-[14px]' :
+                      'h-[6px]'
+                    }`}
                 />
               </div>
             ))}
@@ -99,9 +121,9 @@ export default function BookingTimeline({ tables, bookings = [] }) {
             {/* Unified Background Grid Lines (Every 30 mins) rendered ONCE for the entire grid */}
             <div className="absolute inset-0 pointer-events-none flex" style={{ width: `${totalWidth}px` }}>
               {Array.from({ length: (closeHour - TIMELINE_CONFIG.OPEN_HOUR) * 2 }).map((_, i) => (
-                <div 
-                  key={i} 
-                  className={`h-full border-r border-[#2a2a2e] ${i % 2 === 0 ? 'opacity-50' : 'opacity-[0.22]'}`}
+                <div
+                  key={i}
+                  className={`h-full border-r border-[#2a2a2e] ${i % 2 === 0 ? 'opacity-40' : 'opacity-60'}`}
                   style={{ width: `${30 * TIMELINE_CONFIG.PIXELS_PER_MINUTE}px` }}
                 />
               ))}
