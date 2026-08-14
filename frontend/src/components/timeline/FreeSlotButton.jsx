@@ -1,11 +1,12 @@
 import { timeToPixels, durationToPixels } from './timelineUtils';
 
-export default function FreeSlotButton({ startTimestamp, durationMs }) {
+export default function FreeSlotButton({ startTimestamp, durationMs, onClick }) {
   const left = timeToPixels(startTimestamp);
   const width = durationToPixels(durationMs);
 
   return (
     <div
+      onClick={onClick}
       className="absolute top-[10px] bottom-[10px] rounded-[10px] border-[1.5px] border-dashed border-[#3a3a40]/90 bg-white/[0.015] flex items-center justify-center cursor-pointer z-10 text-text-dim text-[0.76rem] font-semibold gap-[0.35rem] hover:border-accent hover:bg-accent/10 hover:text-accent-bright active:border-accent active:bg-accent/20 active:text-accent-bright select-none [-webkit-tap-highlight-color:transparent]"
       style={{ left: `${left}px`, width: `${width}px` }}
     >

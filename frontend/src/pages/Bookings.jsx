@@ -55,8 +55,21 @@ const PlusIcon = () => (
   </svg>
 );
 
+import CreateBookingModal from '../components/timeline/CreateBookingModal';
+
 export default function Bookings() {
   const [tables] = useState(MOCK_TABLES);
+  const [timelineBookings, setTimelineBookings] = useState(MOCK_TIMELINE_BOOKINGS);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+
+  const handleCreateBooking = (bookingData) => {
+    const newBooking = {
+      id: Date.now(), // Generate unique ID
+      ...bookingData
+    };
+    setTimelineBookings(prev => [...prev, newBooking]);
+    // In a real app, this would be an API call, and we'd update table status if currently active
+  };
 
   return (
     <div className="max-w-[1600px] mx-auto min-h-screen">
@@ -79,7 +92,7 @@ export default function Bookings() {
           return (
             <a
               key={table.id}
-              href={isBusy ? `tel:${table.mobile.replace(/\s+/g, '')}` : undefined}
+              href={isBusy ? `tel:${table.mobile?.replace(/\s+/g, '')}` : undefined}
               title={isBusy ? `Call ${table.player}` : 'Assign Table'}
               className={`block relative group overflow-hidden rounded-[2rem] bg-[#18181b] border transition-colors duration-500 cursor-pointer flex flex-col justify-between h-[280px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.5),inset_0_0_40px_rgba(255,255,255,0.05),inset_0_1px_1px_rgba(255,255,255,0.08)] select-none [-webkit-tap-highlight-color:transparent] active:scale-[0.98] ${isBusy
                 ? 'border-white/10 hover:border-danger/50 hover:shadow-[0_0_40px_rgba(240,82,82,0.2),inset_0_0_40px_rgba(255,255,255,0.05),inset_0_1px_1px_rgba(255,255,255,0.08)] active:border-danger/50 active:shadow-[0_0_40px_rgba(240,82,82,0.2),inset_0_0_40px_rgba(255,255,255,0.05),inset_0_1px_1px_rgba(255,255,255,0.08)]'
@@ -159,7 +172,19 @@ export default function Bookings() {
       </div>
 
       {/* Interactive Booking Timeline */}
-      <BookingTimeline tables={tables} bookings={MOCK_TIMELINE_BOOKINGS} />
+      <BookingTimeline 
+        tables={tables} 
+        bookings={timelineBookings} 
+        onSlotClick={setSelectedSlot}
+      />
+      
+      {/* Create Booking Modal */}
+      <CreateBookingModal 
+        isOpen={!!selectedSlot}
+        onClose={() => setSelectedSlot(null)}
+        slot={selectedSlot}
+        onConfirm={handleCreateBooking}
+      />
     </div>
   );
 }
