@@ -114,9 +114,42 @@ export default function CreateBookingModal({ isOpen, onClose, slot, onConfirm })
     }
   };
 
+  const [error, setError] = useState('');
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.player) return;
+    setError('');
+
+    if (!form.player.trim()) {
+      return setError(`Please enter the player name`);
+    }
+
+    const checkInMs = parseTimeFromInput(form.checkIn, slot?.startTimestamp);
+    let checkOutMs = parseTimeFromInput(form.checkOut, slot?.startTimestamp);
+
+    if (checkOutMs < checkInMs) {
+      checkOutMs += 24 * 3600000;
+    }
+
+    const slotStartMs = slot.startTimestamp;
+    const slotEndMs = slot.startTimestamp + slot.durationMs;
+
+    const minCheckIn = slotStartMs - (15 * 60000);
+    const maxCheckIn = slotEndMs - (15 * 60000);
+
+    if (checkInMs < minCheckIn) {
+      return setError(`Check-in cannot be earlier than ${formatTimeForInput(minCheckIn)}`);
+    }
+    if (checkInMs > maxCheckIn) {
+      return setError(`Check-in cannot be later than ${formatTimeForInput(maxCheckIn)}`);
+    }
+    if (checkOutMs < slotStartMs) {
+      return setError(`Check-out cannot be earlier than ${formatTimeForInput(slotStartMs)}`);
+    }
+    if (checkOutMs > slotEndMs) {
+      return setError(`Check-out cannot be later than ${formatTimeForInput(slotEndMs)}`);
+    }
+
     setStep('summary');
   };
 
@@ -213,7 +246,6 @@ export default function CreateBookingModal({ isOpen, onClose, slot, onConfirm })
                   className={inputBase}
                   placeholder="E.g. Allison Fisher"
                   autoComplete="on"
-                  required
                 />
               </div>
               <div>
@@ -262,20 +294,31 @@ export default function CreateBookingModal({ isOpen, onClose, slot, onConfirm })
             </div>
           </div>
 
-          <div className="mt-8 flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-6 py-4 rounded-xl font-bold text-white/90 hover:text-white bg-white/5 hover:bg-white/10 transition-all"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 bg-accent hover:bg-accent-bright text-white px-6 py-4 rounded-xl font-bold tracking-wide shadow-[0_0_20px_rgba(74,188,109,0.2)] hover:shadow-[0_0_30px_rgba(74,188,109,0.4)] transition-all active:scale-[0.98]"
-            >
-              Continue
-            </button>
+          <div className='mt-8'>
+            {error && (
+              <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-semibold flex items-center gap-2">
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-6 py-4 rounded-xl font-bold text-white/90 hover:text-white bg-white/5 hover:bg-white/10 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 bg-accent hover:bg-accent-bright text-white px-6 py-4 rounded-xl font-bold tracking-wide shadow-[0_0_20px_rgba(74,188,109,0.2)] hover:shadow-[0_0_30px_rgba(74,188,109,0.4)] transition-all active:scale-[0.98]"
+              >
+                Continue
+              </button>
+            </div>
           </div>
         </form>
       ) : (
