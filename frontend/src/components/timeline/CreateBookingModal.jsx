@@ -225,7 +225,7 @@ export default function CreateBookingModal({ isOpen, onClose, slot, onConfirm })
               </div>
               <input
                 type="number"
-                step="0.25"
+                step="any"
                 min="0.25"
                 value={form.durationStr}
                 onChange={(e) => handleDurationChange(e.target.value)}
