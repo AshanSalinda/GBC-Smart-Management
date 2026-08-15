@@ -101,13 +101,13 @@ export default function Bookings() {
               key={table.id}
               href={isBusy ? `tel:${table.mobile?.replace(/\s+/g, '')}` : undefined}
               title={isBusy ? `Call ${table.player}` : 'Assign Table'}
-              className={`block relative group overflow-hidden rounded-[2rem] bg-[#18181b] border transition-colors duration-500 cursor-pointer flex flex-col justify-between h-[280px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.5),inset_0_0_40px_rgba(255,255,255,0.05),inset_0_1px_1px_rgba(255,255,255,0.08)] select-none [-webkit-tap-highlight-color:transparent] active:scale-[0.98] ${isBusy
-                ? 'border-white/10 hover:border-danger/50 hover:shadow-[0_0_40px_rgba(240,82,82,0.2),inset_0_0_40px_rgba(255,255,255,0.05),inset_0_1px_1px_rgba(255,255,255,0.08)] active:border-danger/50 active:shadow-[0_0_40px_rgba(240,82,82,0.2),inset_0_0_40px_rgba(255,255,255,0.05),inset_0_1px_1px_rgba(255,255,255,0.08)]'
-                : 'border-dashed border-white/20 hover:border-accent/50 hover:bg-accent/[0.03] hover:shadow-[0_0_40px_rgba(74,188,109,0.2),inset_0_0_40px_rgba(74,188,109,0.08),inset_0_1px_1px_rgba(255,255,255,0.08)] active:border-accent/50 active:bg-accent/[0.03] active:shadow-[0_0_40px_rgba(74,188,109,0.2),inset_0_0_40px_rgba(74,188,109,0.08),inset_0_1px_1px_rgba(255,255,255,0.08)]'
+              className={`block relative group overflow-hidden rounded-[2rem] bg-[#18181b] border transition-colors duration-500 cursor-pointer flex flex-col justify-between h-[280px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.5)] select-none [-webkit-tap-highlight-color:transparent] active:scale-[0.98] ${isBusy
+                ? 'border-white/10 hover:border-danger/50 hover:shadow-[0_0_40px_rgba(240,82,82,0.2)] active:border-danger/50 active:shadow-[0_0_40px_rgba(240,82,82,0.2)]'
+                : 'border-dashed border-white/20 hover:border-accent/50 hover:bg-accent/[0.03] hover:shadow-[0_0_40px_rgba(74,188,109,0.2)] active:border-accent/50 active:bg-accent/[0.03] active:shadow-[0_0_40px_rgba(74,188,109,0.2)]'
                 }`}
             >
-              {/* Giant Background Number with Parallax Hover Effect */}
-              <div className="absolute -bottom-6 -right-6 text-[200px] font-display font-black leading-none text-white opacity-[0.02] group-hover:opacity-[0.04] group-hover:scale-110 group-hover:-rotate-6 group-active:opacity-[0.04] group-active:scale-110 group-active:-rotate-6 transition-transform duration-700 pointer-events-none select-none z-0 will-change-transform">
+              {/* Giant Background Number with Parallax Hover Effect (Optimized) */}
+              <div className="absolute -bottom-6 -right-6 text-[200px] font-display font-black leading-none text-white opacity-[0.02] group-hover:opacity-[0.04] group-hover:scale-110 group-hover:-rotate-6 group-active:opacity-[0.04] group-active:scale-110 group-active:-rotate-6 transition-transform duration-700 pointer-events-none select-none z-0">
                 {table.id}
               </div>
 
@@ -139,7 +139,7 @@ export default function Bookings() {
                   <div className="space-y-5">
                     {/* User Info */}
                     <div className="flex items-center gap-4 group/user w-fit pr-8">
-                      <div className="w-14 h-14 flex-shrink-0 rounded-full bg-gradient-to-tr from-white/10 to-white/5 border border-white/10 flex items-center justify-center text-white font-display font-bold text-2xl shadow-lg shadow-black/50 group-hover:border-danger/40 group-hover:text-danger group-hover:shadow-[0_0_15px_rgba(240,82,82,0.2)] group-active:border-danger/40 group-active:text-danger transition-all">
+                      <div className="w-14 h-14 flex-shrink-0 rounded-full bg-gradient-to-tr from-white/10 to-white/5 border border-white/10 flex items-center justify-center text-white font-display font-bold text-2xl shadow-lg shadow-black/50 group-hover:border-danger/40 group-hover:text-danger group-active:border-danger/40 group-active:text-danger transition">
                         {table.player.charAt(0)}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -163,8 +163,8 @@ export default function Bookings() {
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center text-center opacity-80 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-500 pb-4">
                     <div className="relative w-20 h-20 mb-5 flex items-center justify-center">
-                      <div className="absolute inset-0 rounded-full border-2 border-dashed border-accent/40 group-hover:border-accent/80 group-hover:rotate-90 group-active:border-accent/80 group-active:rotate-90 transition-all duration-700" />
-                      <div className="w-12 h-12 rounded-full bg-accent/10 border border-accent/20 text-accent flex items-center justify-center group-hover:scale-110 group-active:scale-110 transition-transform duration-500 shadow-[0_0_20px_rgba(74,188,109,0.2)]">
+                      <div className="absolute inset-0 rounded-full border-2 border-dashed border-accent/40 group-hover:border-accent/80 group-hover:rotate-90 group-active:border-accent/80 group-active:rotate-90 transition duration-700" />
+                      <div className="w-12 h-12 rounded-full bg-accent/10 border border-accent/20 text-accent flex items-center justify-center group-hover:scale-110 group-active:scale-110 transition-transform duration-500 shadow-lg">
                         <PlusIcon />
                       </div>
                     </div>

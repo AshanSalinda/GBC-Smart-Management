@@ -9,7 +9,7 @@ export default function Navigation() {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Bookings', path: '/bookings', icon: CalendarDays },
-    { name: 'Lights', path: '/lights-control', icon: Lightbulb },
+    { name: 'Illumination', path: '/illumination', icon: Lightbulb },
     { name: 'TV Display', path: '/tv-display', icon: TvMinimal },
     ...(isAdmin ? [{ name: 'Admin', path: '/admin', icon: Users }] : []),
   ];
