@@ -7,7 +7,7 @@ const formatTime = (ms) => {
   return new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 };
 
-export default function BookingBlock({ booking }) {
+export default function BookingBlock({ booking, onEditBooking }) {
   const [showModal, setShowModal] = useState(false);
   const left = timeToPixels(booking.startTime);
   const width = durationToPixels(booking.duration);
@@ -73,7 +73,7 @@ export default function BookingBlock({ booking }) {
         <div className="grid grid-cols-4 gap-3 mt-6">
           {/* Call Booker */}
           <a
-            href={`tel:${booking.mobile.replace(/\s+/g, '')}`}
+            href={`tel:${booking.mobile?.replace(/\s+/g, '')}`}
             className="flex items-center justify-center py-4 bg-white/5 hover:bg-white/10 active:bg-white/15 active:scale-[0.95] text-white rounded-[1rem] transition-all select-none"
             onClick={e => e.stopPropagation()}
             title="Call Booker"
@@ -86,7 +86,11 @@ export default function BookingBlock({ booking }) {
           {/* Edit Booking */}
           <button
             className="flex items-center justify-center py-4 bg-white/5 hover:bg-white/10 active:bg-white/15 active:scale-[0.95] text-white rounded-[1rem] transition-all select-none"
-            onClick={e => { e.stopPropagation(); /* TODO: Edit */ }}
+            onClick={e => { 
+              e.stopPropagation(); 
+              setShowModal(false);
+              onEditBooking?.(booking); 
+            }}
             title="Update Info"
           >
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-8 h-8">

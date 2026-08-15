@@ -3,7 +3,7 @@ import TimelineRow from './TimelineRow';
 import CurrentTimeLine from './CurrentTimeLine';
 import { getTimelineHeaders, getTotalTimelineWidth, TIMELINE_CONFIG, getDynamicCloseHour } from './timelineUtils';
 
-export default function BookingTimeline({ tables, bookings = [], onSlotClick }) {
+export default function BookingTimeline({ tables, bookings = [], onSlotClick, onEditBooking }) {
   const scrollContainerRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(Date.now());
 
@@ -141,6 +141,7 @@ export default function BookingTimeline({ tables, bookings = [], onSlotClick }) 
                 closeHour={closeHour}
                 currentTime={currentTime}
                 onSlotClick={onSlotClick}
+                onEditBooking={onEditBooking}
               />
             ))}
           </div>

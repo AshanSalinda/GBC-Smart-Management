@@ -7,8 +7,9 @@ const HOURLY_RATE = 15.0; // Global rate config
 const inputBase = "w-full bg-[#121214] border border-[#2a2a2e] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent focus:shadow-[0_0_15px_rgba(74,188,109,0.15)] transition-all font-medium placeholder-white/20";
 const labelBase = "block text-text-dim text-[0.7rem] uppercase font-bold tracking-wider mb-2 ml-1";
 
-export default function CreateBookingModal({ isOpen, onClose, slot, onConfirm }) {
+export default function CreateBookingModal({ isOpen, onClose, slot, existingBooking, tableBookings = [], onConfirm }) {
   const [step, setStep] = useState('form');
+  const [error, setError] = useState('');
 
   const [form, setForm] = useState({
     checkIn: '',
@@ -21,7 +22,25 @@ export default function CreateBookingModal({ isOpen, onClose, slot, onConfirm })
   });
 
   useEffect(() => {
-    if (isOpen && slot) {
+    setError('');
+    if (!isOpen) return;
+
+    if (existingBooking) {
+      const startMs = existingBooking.startTime;
+      const durationMs = existingBooking.duration;
+      const endMs = startMs + durationMs;
+
+      setForm({
+        checkIn: formatTimeForInput(startMs),
+        checkOut: formatTimeForInput(endMs),
+        durationStr: (durationMs / 3600000).toFixed(2).replace(/\.00$/, ''),
+        player: existingBooking.player || '',
+        mobile: existingBooking.mobile || '',
+        amount: String(existingBooking.amount || 0),
+        isPaid: !!existingBooking.paid
+      });
+      setStep('form');
+    } else if (slot) {
       const startMs = slot.startTimestamp;
       const durationMs = 60 * 60000;
       const endMs = startMs + durationMs;
@@ -37,7 +56,9 @@ export default function CreateBookingModal({ isOpen, onClose, slot, onConfirm })
       });
       setStep('form');
     }
-  }, [isOpen, slot]);
+  }, [isOpen, slot, existingBooking]);
+
+  const getBaseMs = () => existingBooking ? existingBooking.startTime : slot?.startTimestamp;
 
   const formatTimeForInput = (ms) => {
     const d = new Date(ms);
@@ -61,7 +82,7 @@ export default function CreateBookingModal({ isOpen, onClose, slot, onConfirm })
   };
 
   const handleCheckInChange = (val) => {
-    const newCheckInMs = parseTimeFromInput(val, slot?.startTimestamp);
+    const newCheckInMs = parseTimeFromInput(val, getBaseMs());
 
     const durHours = parseFloat(form.durationStr);
     if (!isNaN(durHours) && durHours > 0) {
@@ -81,7 +102,7 @@ export default function CreateBookingModal({ isOpen, onClose, slot, onConfirm })
     setForm(prev => ({ ...prev, durationStr: val }));
 
     if (!isNaN(durHours) && durHours > 0 && form.checkIn) {
-      const checkInMs = parseTimeFromInput(form.checkIn, slot?.startTimestamp);
+      const checkInMs = parseTimeFromInput(form.checkIn, getBaseMs());
       const newCheckOutMs = checkInMs + (durHours * 3600000);
       setForm(prev => ({
         ...prev,
@@ -92,10 +113,10 @@ export default function CreateBookingModal({ isOpen, onClose, slot, onConfirm })
   };
 
   const handleCheckOutChange = (val) => {
-    const newCheckOutMs = parseTimeFromInput(val, slot?.startTimestamp);
+    const newCheckOutMs = parseTimeFromInput(val, getBaseMs());
 
     if (form.checkIn) {
-      const checkInMs = parseTimeFromInput(form.checkIn, slot?.startTimestamp);
+      const checkInMs = parseTimeFromInput(form.checkIn, getBaseMs());
       let diffMs = newCheckOutMs - checkInMs;
 
       if (diffMs < 0) {
@@ -114,8 +135,6 @@ export default function CreateBookingModal({ isOpen, onClose, slot, onConfirm })
     }
   };
 
-  const [error, setError] = useState('');
-
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
@@ -124,41 +143,59 @@ export default function CreateBookingModal({ isOpen, onClose, slot, onConfirm })
       return setError(`Please enter the player name`);
     }
 
-    const checkInMs = parseTimeFromInput(form.checkIn, slot?.startTimestamp);
-    let checkOutMs = parseTimeFromInput(form.checkOut, slot?.startTimestamp);
+    const checkInMs = parseTimeFromInput(form.checkIn, getBaseMs());
+    let checkOutMs = parseTimeFromInput(form.checkOut, getBaseMs());
 
     if (checkOutMs < checkInMs) {
       checkOutMs += 24 * 3600000;
     }
 
-    const slotStartMs = slot.startTimestamp;
-    const slotEndMs = slot.startTimestamp + slot.durationMs;
+    if (existingBooking) {
+      // Edit Mode: Check for overlaps against other bookings
+      const overlappingBooking = tableBookings.find(b => {
+        if (b.id === existingBooking.id) return false;
+        const bStart = b.startTime;
+        const bEnd = b.startTime + b.duration;
+        // Overlap condition: newStart < bEnd AND newEnd > bStart
+        return checkInMs < bEnd && checkOutMs > bStart;
+      });
 
-    const minCheckIn = slotStartMs - (15 * 60000);
-    const maxCheckIn = slotEndMs - (15 * 60000);
+      if (overlappingBooking) {
+        const overlapStart = formatTimeForInput(overlappingBooking.startTime);
+        const overlapEnd = formatTimeForInput(overlappingBooking.startTime + overlappingBooking.duration);
+        return setError(`These times overlap with ${overlappingBooking.player}'s booking from ${overlapStart} to ${overlapEnd}.`);
+      }
+    } else if (slot) {
+      // Create Mode: Check against free slot boundaries
+      const slotStartMs = slot.startTimestamp;
+      const slotEndMs = slot.startTimestamp + slot.durationMs;
 
-    if (checkInMs < minCheckIn) {
-      return setError(`Check-in cannot be earlier than ${formatTimeForInput(minCheckIn)}`);
-    }
-    if (checkInMs > maxCheckIn) {
-      return setError(`Check-in cannot be later than ${formatTimeForInput(maxCheckIn)}`);
-    }
-    if (checkOutMs < slotStartMs) {
-      return setError(`Check-out cannot be earlier than ${formatTimeForInput(slotStartMs)}`);
-    }
-    if (checkOutMs > slotEndMs) {
-      return setError(`Check-out cannot be later than ${formatTimeForInput(slotEndMs)}`);
+      const minCheckIn = slotStartMs - (15 * 60000);
+      const maxCheckIn = slotEndMs - (15 * 60000);
+
+      if (checkInMs < minCheckIn) {
+        return setError(`Check-in cannot be earlier than ${formatTimeForInput(minCheckIn)}`);
+      }
+      if (checkInMs > maxCheckIn) {
+        return setError(`Check-in cannot be later than ${formatTimeForInput(maxCheckIn)}`);
+      }
+      if (checkOutMs < slotStartMs) {
+        return setError(`Check-out cannot be earlier than ${formatTimeForInput(slotStartMs)}`);
+      }
+      if (checkOutMs > slotEndMs) {
+        return setError(`Check-out cannot be later than ${formatTimeForInput(slotEndMs)}`);
+      }
     }
 
     setStep('summary');
   };
 
   const handleConfirm = () => {
-    const checkInMs = parseTimeFromInput(form.checkIn, slot?.startTimestamp);
+    const checkInMs = parseTimeFromInput(form.checkIn, getBaseMs());
     const durHours = parseFloat(form.durationStr) || 1;
 
     onConfirm({
-      tableId: slot.tableId,
+      tableId: existingBooking ? existingBooking.tableId : slot?.tableId,
       player: form.player,
       mobile: form.mobile,
       startTime: checkInMs,
@@ -169,15 +206,17 @@ export default function CreateBookingModal({ isOpen, onClose, slot, onConfirm })
     onClose();
   };
 
-  if (!isOpen || !slot) return null;
+  if (!isOpen || (!slot && !existingBooking)) return null;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       {step === 'form' ? (
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
           <div className="mb-6">
-            <h2 className="text-2xl font-display font-black text-white">New Booking</h2>
-            <p className="text-text-dim text-sm font-medium">Table 0{slot.tableId}</p>
+            <h2 className="text-2xl font-display font-black text-white">
+              {existingBooking ? 'Edit Booking' : 'New Booking'}
+            </h2>
+            <p className="text-text-dim text-sm font-medium">Table 0{existingBooking ? existingBooking.tableId : slot?.tableId}</p>
           </div>
 
           <div className="space-y-5 flex-1">
@@ -296,10 +335,7 @@ export default function CreateBookingModal({ isOpen, onClose, slot, onConfirm })
 
           <div className='mt-8'>
             {error && (
-              <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-semibold flex items-center gap-2">
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
+              <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-semibold flex items-center">
                 {error}
               </div>
             )}
@@ -324,7 +360,7 @@ export default function CreateBookingModal({ isOpen, onClose, slot, onConfirm })
       ) : (
         <div className="flex flex-col h-full">
           <div className="mb-6">
-            <h2 className="text-2xl font-display font-black text-white">Review Booking</h2>
+            <h2 className="text-2xl font-display font-black text-white">{existingBooking ? 'Review Changes' : 'Review Booking'}</h2>
             <p className="text-text-dim text-sm font-medium">Please confirm the details</p>
           </div>
 
@@ -332,7 +368,7 @@ export default function CreateBookingModal({ isOpen, onClose, slot, onConfirm })
             <div className="bg-[#121214] border border-[#2a2a2e] rounded-2xl p-5 space-y-4">
               <div className="flex justify-between items-center border-b border-white/5 pb-4">
                 <span className="text-text-dim text-sm font-bold">Table</span>
-                <span className="text-white font-bold text-lg">0{slot.tableId}</span>
+                <span className="text-white font-bold text-lg">0{existingBooking ? existingBooking.tableId : slot?.tableId}</span>
               </div>
               <div className="flex justify-between items-center border-b border-white/5 pb-4">
                 <span className="text-text-dim text-sm font-bold">Player</span>

@@ -17,7 +17,7 @@ const MOCK_TIMELINE_BOOKINGS = [
   { id: 101, tableId: 1, player: 'John Doe', mobile: '555-0101', startTime: now - 3 * hour, duration: 1.5 * hour, amount: 22.5, paid: true },
   { id: 102, tableId: 1, player: 'Rahul Mehta', mobile: '+1 234 567 890', startTime: now - 55000, duration: 1 * hour, amount: 15.0, paid: true }, // Current
   { id: 103, tableId: 1, player: 'Alice Smith', mobile: '555-0102', startTime: now + 2 * hour, duration: 2 * hour, amount: 30.0, paid: false },
-  
+
   // Table 2
   { id: 201, tableId: 2, player: 'Sarah Connor', mobile: '+1 987 654 321', startTime: now - (48 * 60000 + 55000), duration: 1 * hour, amount: 20.0, paid: false }, // Current
   { id: 202, tableId: 2, player: 'Mike Johnson', mobile: '555-0202', startTime: now + 1.5 * hour, duration: 1 * hour, amount: 15.0, paid: true },
@@ -61,6 +61,7 @@ export default function Bookings() {
   const [tables] = useState(MOCK_TABLES);
   const [timelineBookings, setTimelineBookings] = useState(MOCK_TIMELINE_BOOKINGS);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [editingBooking, setEditingBooking] = useState(null);
 
   const handleCreateBooking = (bookingData) => {
     const newBooking = {
@@ -69,6 +70,12 @@ export default function Bookings() {
     };
     setTimelineBookings(prev => [...prev, newBooking]);
     // In a real app, this would be an API call, and we'd update table status if currently active
+  };
+
+  const handleUpdateBooking = (updatedData) => {
+    setTimelineBookings(prev =>
+      prev.map(b => b.id === editingBooking.id ? { ...b, ...updatedData } : b)
+    );
   };
 
   return (
@@ -172,18 +179,32 @@ export default function Bookings() {
       </div>
 
       {/* Interactive Booking Timeline */}
-      <BookingTimeline 
-        tables={tables} 
-        bookings={timelineBookings} 
+      <BookingTimeline
+        tables={tables}
+        bookings={timelineBookings}
         onSlotClick={setSelectedSlot}
+        onEditBooking={setEditingBooking}
       />
-      
-      {/* Create Booking Modal */}
-      <CreateBookingModal 
-        isOpen={!!selectedSlot}
-        onClose={() => setSelectedSlot(null)}
+
+      {/* Create / Edit Booking Modal */}
+      <CreateBookingModal
+        isOpen={!!selectedSlot || !!editingBooking}
+        onClose={() => {
+          setSelectedSlot(null);
+          setEditingBooking(null);
+        }}
         slot={selectedSlot}
-        onConfirm={handleCreateBooking}
+        existingBooking={editingBooking}
+        tableBookings={timelineBookings.filter(b => b.tableId === (selectedSlot?.tableId || editingBooking?.tableId))}
+        onConfirm={(data) => {
+          if (editingBooking) {
+            handleUpdateBooking(data);
+            setEditingBooking(null);
+          } else {
+            handleCreateBooking(data);
+            setSelectedSlot(null);
+          }
+        }}
       />
     </div>
   );

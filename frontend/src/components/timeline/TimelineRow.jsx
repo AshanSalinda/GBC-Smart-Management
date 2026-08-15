@@ -49,14 +49,14 @@ function calculateFreeSlots(bookings, closeHour, currentTime) {
   return freeSlots;
 }
 
-export default function TimelineRow({ table, width, bookings = [], isLast, closeHour, currentTime, onSlotClick }) {
+export default function TimelineRow({ table, width, bookings = [], isLast, closeHour, currentTime, onSlotClick, onEditBooking }) {
   const freeSlots = calculateFreeSlots(bookings, closeHour, currentTime);
 
   return (
     <div className={`relative h-[92px] flex items-center ${isLast ? '' : 'border-b border-[#2a2a2e]'}`} style={{ width: `${width}px` }}>
       {/* Existing Bookings */}
       {bookings.map((b) => (
-        <BookingBlock key={b.id} booking={b} />
+        <BookingBlock key={b.id} booking={b} onEditBooking={onEditBooking} />
       ))}
 
       {/* Free Slots */}
