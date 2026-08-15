@@ -13,7 +13,7 @@ export default function TopHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-bg/80 backdrop-blur-md border-b border-border-light px-4 md:px-6 py-3 flex items-center justify-between">
+    <header className="sticky top-0 z-40 bg-[#151517] border-b border-border-light px-4 md:px-6 py-3 flex items-center justify-between shadow-xl">
       <div className="flex items-center gap-3 font-display font-bold text-lg tracking-tight">
         <div className="w-9 h-9 bg-gradient-to-br from-accent-bright to-accent-dim rounded-[10px] flex items-center justify-center text-lg shadow-accent">
           B

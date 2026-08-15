@@ -14,22 +14,35 @@ export default function Navigation() {
     ...(isAdmin ? [{ name: 'Admin', path: '/admin', icon: Users }] : []),
   ];
 
-  const getNavClass = ({ isActive }) =>
-    `flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all ${isActive
+  const getDesktopNavClass = ({ isActive }) =>
+    `flex flex-row items-center justify-start gap-3 px-4 py-3 rounded-xl transition-all ${isActive
       ? 'text-accent-bright bg-accent/10'
       : 'text-text-dim hover:text-text-main hover:bg-card-hover'
     }`;
 
+  const getMobileNavClass = ({ isActive }) =>
+    `relative flex w-16 items-center justify-center py-3.5 transition duration-200 ${isActive
+      ? 'text-accent-bright'
+      : 'text-text-dim hover:text-white/80 active:scale-95'
+    }`;
+
   return (
     <>
-      {/* Mobile Bottom Navigation (Hidden on md+) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-bg/95 backdrop-blur-lg border-t border-border px-2 py-2 flex items-center justify-around pb-safe">
+      {/* Premium Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed rounded-t-4xl bottom-0 left-0 right-0 z-50 bg-[#1c1c1e] border-t border-[#2c2c2e] px-2 py-1.5 flex items-center justify-around pb-safe shadow-[0_-8px_30px_rgba(0,0,0,0.4)]">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
-            <NavLink key={item.path} to={item.path} className={getNavClass}>
-              <Icon size={20} />
-              <span className="text-[10px] font-semibold">{item.name}</span>
+            <NavLink key={item.path} to={item.path} className={getMobileNavClass}>
+              {({ isActive }) => (
+                <>
+                  {/* Active Circular Background Glow */}
+                  {isActive && <div className="absolute w-14 h-11 bg-accent/15 rounded-full border border-accent/20" />}
+
+                  {/* Icon */}
+                  <Icon size={24} className={`relative z-10 transition-transform duration-200 ${isActive ? 'scale-[1.15]' : ''}`} />
+                </>
+              )}
             </NavLink>
           );
         })}
@@ -41,7 +54,7 @@ export default function Navigation() {
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
-              <NavLink key={item.path} to={item.path} className={getNavClass}>
+              <NavLink key={item.path} to={item.path} className={getDesktopNavClass}>
                 <Icon size={20} />
                 <span className="font-semibold text-sm">{item.name}</span>
               </NavLink>
