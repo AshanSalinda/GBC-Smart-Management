@@ -16,9 +16,6 @@ export default function BookingTimeline({ tables, bookings = [], onSlotClick, on
       if (timeout) clearTimeout(timeout);
       if (interval) clearInterval(interval);
 
-      // Force an immediate time update to catch up
-      setCurrentTime(Date.now());
-
       const msUntilNextMinute = 60000 - (Date.now() % 60000);
 
       timeout = setTimeout(() => {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import BookingTimeline from '../components/timeline/BookingTimeline';
 
 const now = Date.now();
@@ -62,6 +62,14 @@ export default function Bookings() {
   const [timelineBookings, setTimelineBookings] = useState(MOCK_TIMELINE_BOOKINGS);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [editingBooking, setEditingBooking] = useState(null);
+  const [showTimeline, setShowTimeline] = useState(false);
+
+  // Defer the heavy timeline rendering by a few frames to ensure the 
+  // page mounts and transitions instantly on mobile devices.
+  useEffect(() => {
+    const timer = setTimeout(() => setShowTimeline(true), 150);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleCreateBooking = (bookingData) => {
     const newBooking = {
@@ -179,12 +187,19 @@ export default function Bookings() {
       </div>
 
       {/* Interactive Booking Timeline */}
-      <BookingTimeline
-        tables={tables}
-        bookings={timelineBookings}
-        onSlotClick={setSelectedSlot}
-        onEditBooking={setEditingBooking}
-      />
+      {showTimeline ? (
+        <BookingTimeline
+          tables={tables}
+          bookings={timelineBookings}
+          onSlotClick={setSelectedSlot}
+          onEditBooking={setEditingBooking}
+        />
+      ) : (
+        <div className="h-[400px] w-full rounded-[16px] border border-[#2a2a2e] flex flex-col items-center justify-center bg-[#151517] shadow-xl mt-4 animate-pulse">
+          <div className="w-8 h-8 border-4 border-[#3a3a40] border-t-accent rounded-full animate-spin mb-4" />
+          <p className="text-text-dim text-sm font-medium">Loading Timeline...</p>
+        </div>
+      )}
 
       {/* Create / Edit Booking Modal */}
       <CreateBookingModal
