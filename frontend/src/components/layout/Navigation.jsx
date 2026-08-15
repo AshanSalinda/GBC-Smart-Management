@@ -39,7 +39,7 @@ export default function Navigation() {
               {({ isActive }) => (
                 <>
                   {/* Active Circular Background Glow */}
-                  {isActive && <div className="absolute w-16 h-12 bg-accent/15 rounded-full border border-accent/20" />}
+                  {isActive && <div className="absolute w-14 h-[46px] bg-accent/15 rounded-full border border-accent/20" />}
 
                   {/* Icon */}
                   <Icon size={24} className={`relative z-10 transition-transform duration-200 ${isActive ? 'scale-[1.15]' : ''}`} />
