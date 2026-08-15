@@ -8,6 +8,7 @@ import MainLayout from './components/layout/MainLayout';
 // Eagerly loaded components
 import Home from './pages/Home';
 import Login from './pages/Login';
+import PendingApproval from './pages/PendingApproval';
 
 // Lazy loaded components
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
@@ -25,19 +26,24 @@ export default function App() {
             {/* Public Routes - No App Shell */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/pending-approval" element={<PendingApproval />} />
 
             {/* TV Display Route - Full Screen Read-Only */}
             <Route
               path="/tv-display"
               element={
-                <ProtectedRoute allowedRoles={['tv', 'admin']}>
+                <ProtectedRoute allowedRoles={['tv', 'staff', 'admin']}>
                   <TvDisplay />
                 </ProtectedRoute>
               }
             />
 
             {/* Authenticated Routes - Wrapped in MainLayout App Shell */}
-            <Route element={<MainLayout />}>
+            <Route element={
+              <ProtectedRoute>
+                <MainLayout />
+              </ProtectedRoute>
+            }>
               <Route
                 path="/bookings"
                 element={

@@ -12,7 +12,7 @@ export default function ProtectedRoute({ children, allowedRoles }) {
 
   // Restrict non-role-assigned or empty claims accounts
   if (!user.role || user.role === '') {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/pending-approval" replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {

@@ -1,30 +1,67 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { auth, googleProvider } from '../config/firebase';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  // Mocking the authentication state
-  // Hardcoded to an 'admin' user as requested for initial testing
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate a brief loading delay for authentication check
-    const timer = setTimeout(() => {
-      setUser({
-        uid: 'mock-admin-uid-12345',
-        email: 'admin@gbcsmartmanagement.com',
-        role: 'admin', // roles: admin, staff, tv
-      });
-      setLoading(false);
-    }, 500);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          // Fetch the ID token result which contains custom claims
+          const idTokenResult = await firebaseUser.getIdTokenResult();
+          
+          // Get the role from claims. If no role exists, leave it as null/undefined.
+          const role = idTokenResult.claims?.role || null;
 
-    return () => clearTimeout(timer);
+          setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            role: role,
+          });
+        } catch (error) {
+          console.error("Error fetching token claims:", error);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
+
+  const loginWithGoogle = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      return result.user;
+    } catch (error) {
+      console.error('Error logging in with Google:', error);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Error logging out:', error);
+      throw error;
+    }
+  };
 
   const value = {
     user,
     loading,
+    loginWithGoogle,
+    logout
   };
 
   return (
