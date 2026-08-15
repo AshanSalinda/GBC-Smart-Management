@@ -66,4 +66,29 @@
       radial-gradient(ellipse 60% 40% at 100% 0%, rgba(201, 168, 76, 0.04), transparent);
     min-height: 100vh;
   }
+
+  /* Premium Dark Theme Scrollbar - Applied Globally and via Class */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 8px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
 }

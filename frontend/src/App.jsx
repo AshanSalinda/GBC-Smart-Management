@@ -13,7 +13,7 @@ import Login from './pages/Login';
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Bookings = React.lazy(() => import('./pages/Bookings'));
 const TvDisplay = React.lazy(() => import('./pages/TvDisplay'));
-const LightsControl = React.lazy(() => import('./pages/LightsControl'));
+const Illumination = React.lazy(() => import('./pages/Illumination'));
 const Admin = React.lazy(() => import('./pages/Admin'));
 
 export default function App() {
@@ -25,50 +25,50 @@ export default function App() {
             {/* Public Routes - No App Shell */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
-            
+
             {/* TV Display Route - Full Screen Read-Only */}
-            <Route 
-              path="/tv-display" 
+            <Route
+              path="/tv-display"
               element={
                 <ProtectedRoute allowedRoles={['tv', 'admin']}>
                   <TvDisplay />
                 </ProtectedRoute>
-              } 
+              }
             />
 
             {/* Authenticated Routes - Wrapped in MainLayout App Shell */}
             <Route element={<MainLayout />}>
-              <Route 
-                path="/bookings" 
+              <Route
+                path="/bookings"
                 element={
                   <ProtectedRoute allowedRoles={['staff', 'admin']}>
                     <Bookings />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/dashboard" 
+              <Route
+                path="/dashboard"
                 element={
                   <ProtectedRoute allowedRoles={['staff', 'admin']}>
                     <Dashboard />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/lights-control" 
+              <Route
+                path="/illumination"
                 element={
                   <ProtectedRoute allowedRoles={['staff', 'admin']}>
-                    <LightsControl />
+                    <Illumination />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/admin" 
+              <Route
+                path="/admin"
                 element={
                   <ProtectedRoute allowedRoles={['admin']}>
                     <Admin />
                   </ProtectedRoute>
-                } 
+                }
               />
             </Route>
           </Routes>
