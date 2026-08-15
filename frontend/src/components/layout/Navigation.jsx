@@ -1,10 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CalendarDays, Lightbulb, Users, TvMinimal } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Lightbulb, Users, TvMinimal, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useState } from 'react';
 
 export default function Navigation() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -15,7 +17,7 @@ export default function Navigation() {
   ];
 
   const getDesktopNavClass = ({ isActive }) =>
-    `flex flex-row items-center justify-start gap-3 px-4 py-3 rounded-xl transition-all ${isActive
+    `flex flex-row items-center px-4 py-3 rounded-xl transition-all duration-300 overflow-hidden whitespace-nowrap ${isActive
       ? 'text-accent-bright bg-accent/10'
       : 'text-text-dim hover:text-text-main hover:bg-card-hover'
     }`;
@@ -49,17 +51,29 @@ export default function Navigation() {
       </nav>
 
       {/* Desktop Side Navigation (Hidden on mobile) */}
-      <aside className="hidden md:flex flex-col w-64 bg-bg border-r border-border h-full flex-shrink-0 pt-6 px-4 z-10">
-        <div className="flex flex-col gap-2">
+      <aside className={`hidden md:flex flex-col ${isCollapsed ? 'w-[84px]' : 'w-64'} bg-bg border-r border-border h-full flex-shrink-0 pt-6 px-4 z-10 transition-all duration-300`}>
+        <div className="flex flex-col gap-2 flex-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
               <NavLink key={item.path} to={item.path} className={getDesktopNavClass}>
-                <Icon size={20} />
-                <span className="font-semibold text-sm">{item.name}</span>
+                <Icon size={20} className="flex-shrink-0" />
+                <span className={`font-semibold text-sm transition-all duration-300 overflow-hidden ${isCollapsed ? 'w-0 opacity-0 ml-0' : 'w-32 opacity-100 ml-3'}`}>{item.name}</span>
               </NavLink>
             );
           })}
+        </div>
+
+        {/* Collapse Toggle Button */}
+        <div className="pb-6 pt-4 mt-auto border-t border-border/50">
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="flex items-center px-4 py-3 rounded-xl text-text-dim hover:text-text-main hover:bg-card-hover transition-all duration-300 overflow-hidden whitespace-nowrap w-full"
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isCollapsed ? <PanelLeftOpen size={20} className="flex-shrink-0" /> : <PanelLeftClose size={20} className="flex-shrink-0" />}
+            <span className={`font-semibold text-sm transition-all duration-300 overflow-hidden ${isCollapsed ? 'w-0 opacity-0 ml-0' : 'w-32 opacity-100 ml-3 text-left'}`}>Collapse</span>
+          </button>
         </div>
       </aside>
     </>
