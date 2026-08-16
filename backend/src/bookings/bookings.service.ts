@@ -308,7 +308,7 @@ export class BookingsService {
     const payload: BookingMutatedPayload = {
       action,
       booking: {
-        _id: booking._id.toString(),
+        id: booking._id.toString(),
         tableId: booking.tableId,
         bookerName: booking.bookerName,
         bookerMobile: booking.bookerMobile || '',

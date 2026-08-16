@@ -27,7 +27,7 @@ export interface TableUpdatedPayload {
 export interface BookingMutatedPayload {
   action: 'CREATED' | 'UPDATED' | 'CANCELLED';
   booking: {
-    _id: string;
+    id: string;
     tableId: number;
     bookerName: string;
     bookerMobile: string;

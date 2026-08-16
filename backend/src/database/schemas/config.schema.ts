@@ -3,7 +3,18 @@ import { HydratedDocument } from 'mongoose';
 
 export type ConfigDocument = HydratedDocument<Config>;
 
-@Schema({ timestamps: { createdAt: false, updatedAt: 'updatedAt' } })
+@Schema({ 
+  timestamps: { createdAt: false, updatedAt: 'updatedAt' },
+  toJSON: {
+    virtuals: true,
+    transform: (doc, ret: Record<string, any>) => {
+      ret.id = ret._id;
+      delete ret._id;
+      delete ret.__v;
+      return ret;
+    }
+  }
+})
 export class Config {
   @Prop({ type: String, required: true, unique: true, default: 'GLOBAL_CONFIG' })
   key: string;
