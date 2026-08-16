@@ -10,6 +10,7 @@ import { Server, Socket } from 'socket.io';
 import { OnEvent } from '@nestjs/event-emitter';
 import { FirebaseService } from '../auth/firebase.service';
 import { VenueCacheService } from '../state/venue-cache.service';
+import { BookingsService } from '../bookings/bookings.service';
 import {
   TABLE_UPDATED_EVENT,
   BOOKING_MUTATED_EVENT,
@@ -31,6 +32,7 @@ export class AppGateway
   constructor(
     private readonly firebaseService: FirebaseService,
     private readonly venueCacheService: VenueCacheService,
+    private readonly bookingsService: BookingsService,
   ) {}
 
   afterInit() {
@@ -71,11 +73,17 @@ export class AppGateway
 
       // Emit INITIAL_STATE to the newly connected client
       const tables = this.venueCacheService.getAllTables();
-      client.emit('INITIAL_STATE', {
+      const payload: any = {
         event: 'INITIAL_STATE',
         serverTime: new Date().toISOString(),
         tables,
-      });
+      };
+
+      if (role === 'admin' || role === 'staff') {
+        payload.timeline = await this.bookingsService.getTimeline(new Date().toISOString());
+      }
+
+      client.emit('INITIAL_STATE', payload);
     } catch (error: any) {
       this.logger.warn(`Client ${client.id} disconnected: ${error.message}`);
       client.disconnect(true);
