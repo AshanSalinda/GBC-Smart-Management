@@ -65,7 +65,7 @@ export default function TimelineRow({ table, width, bookings = [], isLast, close
           key={`free-${index}`} 
           startTimestamp={slot.startTimestamp} 
           durationMs={slot.durationMs} 
-          onClick={() => onSlotClick?.({ tableId: table.id, startTimestamp: slot.startTimestamp, durationMs: slot.durationMs })}
+          onClick={() => onSlotClick?.({ tableId: table.tableId || table.id, startTimestamp: slot.startTimestamp, durationMs: slot.durationMs })}
         />
       ))}
     </div>

@@ -73,8 +73,8 @@ export default function BookingTimeline({ tables, bookings = [], onSlotClick, on
           <div className="h-[44px] min-h-[44px] border-b border-[#2a2a2e]" />
 
           {tables.map((t, index) => (
-            <div key={t.id} className={`h-[92px] flex items-center justify-center font-display font-bold text-[1rem] tracking-[-0.02em] text-white ${index !== tables.length - 1 ? 'border-b border-[#2a2a2e]' : ''}`}>
-              T{t.id}
+            <div key={t.tableId || t.id} className={`h-[92px] flex items-center justify-center font-display font-bold text-[1rem] tracking-[-0.02em] text-white ${index !== tables.length - 1 ? 'border-b border-[#2a2a2e]' : ''}`}>
+              T{t.tableId || t.id}
             </div>
           ))}
         </div>
@@ -130,10 +130,10 @@ export default function BookingTimeline({ tables, bookings = [], onSlotClick, on
 
             {tables.map((t, index) => (
               <TimelineRow
-                key={t.id}
+                key={t.tableId || t.id}
                 table={t}
                 width={totalWidth}
-                bookings={bookings.filter(b => b.tableId === t.id)}
+                bookings={bookings.filter(b => b.tableId === (t.tableId || t.id))}
                 isLast={index === tables.length - 1}
                 closeHour={closeHour}
                 currentTime={currentTime}
