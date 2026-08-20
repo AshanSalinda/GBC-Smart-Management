@@ -11,11 +11,12 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { FirebaseService } from '../auth/firebase.service';
 import { VenueCacheService } from '../state/venue-cache.service';
 import { BookingsService } from '../bookings/bookings.service';
+import { BookingDocument } from '../database/schemas/booking.schema';
+import { TableState } from '../state/venue-cache.service';
 import {
-  TABLE_UPDATED_EVENT,
-  BOOKING_MUTATED_EVENT,
+  TABLES_UPDATED_EVENT,
+  TIMELINE_UPDATED_EVENT,
 } from '../common/events/event-types';
-import type { TableUpdatedPayload, BookingMutatedPayload } from '../common/events/event-types';
 
 @WebSocketGateway({
   cors: { origin: '*' },
@@ -97,27 +98,20 @@ export class AppGateway
   /* ─── Event Listeners (Decoupled via EventEmitter) ──────────── */
 
   /**
-   * Broadcasts TABLE_UPDATED to all connected clients whenever
+   * Broadcasts TABLES_UPDATED to all connected clients whenever
    * the in-memory cache emits a table state change.
    */
-  @OnEvent(TABLE_UPDATED_EVENT)
-  handleTableUpdated(payload: TableUpdatedPayload): void {
-    this.server.emit('TABLE_UPDATED', {
-      event: 'TABLE_UPDATED',
-      serverTime: new Date().toISOString(),
-      data: payload,
-    });
+  @OnEvent(TABLES_UPDATED_EVENT)
+  handleTablesUpdated(payload: TableState[]): void {
+    this.server.emit('TABLES_UPDATED', payload);
   }
 
   /**
-   * Broadcasts BOOKING_MUTATED to all connected clients when
-   * a booking is created, updated, or cancelled.
+   * Broadcasts TIMELINE_UPDATED to all connected clients when
+   * the timeline mutates.
    */
-  @OnEvent(BOOKING_MUTATED_EVENT)
-  handleBookingMutated(payload: BookingMutatedPayload): void {
-    this.server.to('room:admin').to('room:staff').emit('BOOKING_MUTATED', {
-      event: 'BOOKING_MUTATED',
-      ...payload,
-    });
+  @OnEvent(TIMELINE_UPDATED_EVENT)
+  handleTimelineUpdated(payload: BookingDocument[]): void {
+    this.server.to('room:admin').to('room:staff').emit('TIMELINE_UPDATED', payload);
   }
 }

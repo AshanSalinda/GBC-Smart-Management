@@ -27,7 +27,7 @@ class SetRoleDto {
 @Controller('api/users')
 @UseGuards(RolesGuard)
 export class UsersController {
-  constructor(private readonly firebaseService: FirebaseService) {}
+  constructor(private readonly firebaseService: FirebaseService) { }
 
   /**
    * GET /api/users?maxResults=100&pageToken=...

@@ -5,10 +5,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Booking, BookingDocument } from '../database/schemas/booking.schema';
 import { Config, ConfigDocument } from '../database/schemas/config.schema';
 import { getOperationalDayBounds } from '../common/utils/time.util';
-import {
-  TABLE_UPDATED_EVENT,
-  TableUpdatedPayload,
-} from '../common/events/event-types';
+import { TABLES_UPDATED_EVENT } from '../common/events/event-types';
 
 /* ─── Interfaces ──────────────────────────────────────────────── */
 
@@ -201,7 +198,6 @@ export class VenueCacheService implements OnModuleInit {
 
   private emitTableUpdate(table: TableState, source: string = 'unknown'): void {
     this.logger.log(`[Transition] Table ${table.tableId} | Status: ${table.status} | Light: ${table.lightStatus} | Source: ${source}`);
-    const payload: TableUpdatedPayload = { ...table };
-    this.eventEmitter.emit(TABLE_UPDATED_EVENT, payload);
+    this.eventEmitter.emit(TABLES_UPDATED_EVENT, this.getAllTables());
   }
 }

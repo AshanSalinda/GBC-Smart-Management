@@ -17,8 +17,7 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { getOperationalDayBounds } from '../common/utils/time.util';
 import {
-  BOOKING_MUTATED_EVENT,
-  BookingMutatedPayload,
+  TIMELINE_UPDATED_EVENT,
 } from '../common/events/event-types';
 
 @Injectable()
@@ -124,8 +123,8 @@ export class BookingsService {
         }, 'booking-create');
       }
 
-      // 6. Broadcast BOOKING_MUTATED
-      this.emitBookingMutation('CREATED', booking);
+      // 6. Broadcast full timeline
+      await this.emitTimelineUpdate();
 
       // 7. Update deadline timers
       await this.bookingSchedulerService.rescheduleTable(dto.tableId);
@@ -211,7 +210,7 @@ export class BookingsService {
       }
 
       // Broadcast
-      this.emitBookingMutation('UPDATED', freshBooking);
+      await this.emitTimelineUpdate();
 
       // Update deadline timers
       await this.bookingSchedulerService.rescheduleTable(freshBooking.tableId);
@@ -252,7 +251,7 @@ export class BookingsService {
       }
 
       // Broadcast
-      this.emitBookingMutation('CANCELLED', freshBooking);
+      await this.emitTimelineUpdate();
 
       // Update deadline timers
       await this.bookingSchedulerService.rescheduleTable(freshBooking.tableId);
@@ -301,24 +300,13 @@ export class BookingsService {
 
   /* ─── Private Helpers ───────────────────────────────────────── */
 
-  private emitBookingMutation(
-    action: 'CREATED' | 'UPDATED' | 'CANCELLED',
-    booking: BookingDocument,
-  ): void {
-    const payload: BookingMutatedPayload = {
-      action,
-      booking: {
-        id: booking._id.toString(),
-        tableId: booking.tableId,
-        bookerName: booking.bookerName,
-        bookerMobile: booking.bookerMobile || '',
-        checkInTime: booking.checkInTime.toISOString(),
-        checkOutTime: booking.checkOutTime.toISOString(),
-        durationMinutes: booking.durationMinutes,
-        amount: booking.amount,
-        isPaid: booking.isPaid,
-      },
-    };
-    this.eventEmitter.emit(BOOKING_MUTATED_EVENT, payload);
+  private async emitTimelineUpdate(): Promise<void> {
+    try {
+      const today = new Date().toISOString();
+      const timeline = await this.getTimeline(today);
+      this.eventEmitter.emit(TIMELINE_UPDATED_EVENT, timeline);
+    } catch (err) {
+      this.logger.error('Failed to emit timeline update', err);
+    }
   }
 }
