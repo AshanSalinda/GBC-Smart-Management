@@ -1,12 +1,7 @@
-import { useState, useCallback } from 'react';
-import { Lightbulb, Power, Info } from 'lucide-react';
-
-const INITIAL_TABLES = [
-  { id: 1, status: 'busy', booker: 'Rahul Mehta', mobile: '+1 234 567 890', endTime: '4:30 PM', lightOn: true },
-  { id: 2, status: 'available', booker: null, mobile: null, endTime: null, lightOn: false },
-  { id: 3, status: 'busy', booker: 'Alex Rivera', mobile: '+1 555 123 456', endTime: '5:15 PM', lightOn: true },
-  { id: 4, status: 'available', booker: null, mobile: null, endTime: null, lightOn: false },
-];
+import React, { useCallback } from 'react';
+import { Lightbulb, Power, Info, Loader2 } from 'lucide-react';
+import useStore from '../store/useStore';
+import { auth } from '../config/firebase';
 
 const PhoneIcon = () => (
   <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -20,25 +15,169 @@ const ClockIcon = () => (
   </svg>
 );
 
-export default function Illumination() {
-  const [tables, setTables] = useState(INITIAL_TABLES);
+const formatTime = (isoString) => {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
 
-  const toggleLight = useCallback((id) => {
-    setTables((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, lightOn: !t.lightOn } : t))
-    );
+// -----------------------------------------------------------------------------
+// Component Memoization & Custom Equality (Performance Optimization)
+// Only re-render if meaningful visual fields change to achieve 60 FPS
+// -----------------------------------------------------------------------------
+const tablePropsAreEqual = (prevProps, nextProps) => {
+  const prev = prevProps.table;
+  const next = nextProps.table;
+  
+  return (
+    prev.status === next.status &&
+    prev.lightStatus === next.lightStatus &&
+    prev.currentBooking?.id === next.currentBooking?.id
+  );
+};
+
+const TableCard = React.memo(({ table, onToggle }) => {
+  const isBusy = table.status === 'BUSY';
+  const isOn = table.lightStatus === 'ON' || table.lightStatus === 'PENDING-ON';
+  const isPending = table.lightStatus === 'PENDING-ON' || table.lightStatus === 'PENDING-OFF';
+
+  return (
+    <div
+      onClick={() => !isPending && onToggle(table.tableId, table.lightStatus)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          if (!isPending) onToggle(table.tableId, table.lightStatus);
+        }
+      }}
+      className={`block relative group overflow-hidden rounded-[2rem] bg-[#18181b] border transition-colors duration-500 flex flex-col justify-between h-[280px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.5)] select-none [-webkit-tap-highlight-color:transparent] ${isPending ? 'opacity-80 cursor-wait' : 'cursor-pointer active:scale-[0.98]'} ${isOn
+        ? 'border-light-on/40 bg-gradient-to-b from-[#1e1c16] to-[#18181b] hover:border-light-on/60 hover:shadow-[0_0_40px_rgba(240,230,168,0.25)]'
+        : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02]'
+        }`}
+    >
+      {/* Giant Background Number */}
+      <div className="absolute -bottom-6 -right-6 text-[200px] font-display font-black leading-none text-white opacity-[0.02] transition-transform duration-700 pointer-events-none select-none z-0">
+        {table.tableId}
+      </div>
+
+      {/* Top Gradient Edge */}
+      <div className={`absolute top-0 left-0 w-full h-[2px] transition-all duration-500 ${isOn ? 'bg-gradient-to-r from-light-on to-transparent opacity-80 shadow-[0_0_15px_var(--color-light-on)]' : 'bg-gradient-to-r from-white to-transparent opacity-10 group-hover:opacity-30'}`} />
+
+      {/* Top Row: Light Status & Booking Badge */}
+      <div className="flex justify-between items-start z-10 relative">
+        <div className={`inline-flex items-center gap-2.5 px-4 py-2 rounded-full border transition-colors ${isOn
+          ? 'bg-light-on/15 border-light-on/30 text-light-on shadow-[0_0_20px_rgba(240,230,168,0.2)]'
+          : 'bg-white/5 border-white/10 text-text-dim'
+          }`}>
+          {isPending ? (
+            <Loader2 className="w-3 h-3 animate-spin text-light-on" />
+          ) : (
+            <div className={`w-2 h-2 rounded-full flex-shrink-0 transition-colors ${isOn ? 'bg-light-on shadow-[0_0_8px_var(--color-light-on)]' : 'bg-text-dim'}`} />
+          )}
+          <span className="text-xs font-bold tracking-widest uppercase whitespace-nowrap">{isOn ? 'Power On' : 'Standby'}</span>
+        </div>
+
+        <div className={`px-4 py-1.5 rounded-xl border font-bold text-[0.75rem] uppercase tracking-wider flex items-center justify-center ${isBusy ? 'bg-danger/10 text-danger border-danger/20' : 'bg-accent/10 text-accent-bright border-accent/20'}`}>
+          {isBusy ? 'Busy' : 'Available'}
+        </div>
+      </div>
+
+      {/* Center: Table Name or Booking Info */}
+      <div className="z-10 relative mt-auto">
+        {isBusy && table.currentBooking ? (
+          <div className="space-y-5">
+            {/* User Info */}
+            <div className="flex items-center gap-4 group/user w-fit pr-8">
+              <div className={`w-14 h-14 flex-shrink-0 rounded-full bg-gradient-to-tr from-white/10 to-white/5 border flex items-center justify-center text-white font-display font-bold text-2xl shadow-lg shadow-black/50 transition ${isOn ? 'border-light-on/40 text-light-on' : 'border-white/10'}`}>
+                {table.currentBooking.bookerName?.charAt(0) || '?'}
+              </div>
+              <div className="min-w-0 flex-1">
+                <h4 className="text-2xl font-bold tracking-tight text-white truncate">{table.currentBooking.bookerName || 'Walk-in'}</h4>
+                {table.currentBooking.bookerMobile && (
+                  <p className="text-text-dim text-sm flex items-center gap-1.5 mt-1 font-medium truncate">
+                    <PhoneIcon /> {table.currentBooking.bookerMobile}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Session Box */}
+            <div className="flex items-center gap-3 bg-white/[0.05] px-4 py-3 rounded-2xl border border-white/10 w-fit">
+              <ClockIcon />
+              <p className="text-sm font-semibold text-white/90 flex items-center gap-2 whitespace-nowrap">
+                Ends at <span className="text-white">{formatTime(table.currentBooking.checkOutTime)}</span>
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-center opacity-80 transition-opacity duration-500 pb-4 group-hover:opacity-100">
+            <div className="relative w-20 h-20 mb-5 flex items-center justify-center">
+              <div className={`absolute inset-0 rounded-full border-2 border-dashed transition duration-700 ${isOn ? 'border-light-on/40 group-hover:rotate-90' : 'border-white/20 group-hover:rotate-90'}`} />
+              <div className={`w-12 h-12 rounded-full border flex items-center justify-center transition duration-500 ${isOn ? 'bg-light-on/10 border-light-on/30 text-light-on shadow-lg' : 'bg-white/5 border-white/10 text-white/50'}`}>
+                {isPending ? <Loader2 size={24} className="animate-spin" /> : <Lightbulb size={24} />}
+              </div>
+            </div>
+            <h3 className="text-3xl font-display font-black text-white/90 tracking-tighter mb-1">{table.tableName || `Table ${table.tableId}`}</h3>
+            <p className={`text-sm font-medium tracking-wide ${isOn ? 'text-light-on/80' : 'text-text-dim'}`}>Tap to toggle</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}, tablePropsAreEqual);
+
+// -----------------------------------------------------------------------------
+// Main Illumination View
+// -----------------------------------------------------------------------------
+export default function Illumination() {
+  const tables = useStore(state => state.tables);
+
+  const toggleLight = useCallback(async (tableId, currentLightStatus) => {
+    // Determine the target state opposite of current
+    const targetState = currentLightStatus === 'ON' || currentLightStatus === 'PENDING-ON' ? 'OFF' : 'ON';
+    
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        console.warn("User not authenticated to toggle light");
+        return;
+      }
+      
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+      await fetch(`${BACKEND_URL}/api/lights/toggle`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ tableId, targetState })
+      });
+      // Do NOT manually update local state. Let the WebSocket provide the absolute truth.
+    } catch (error) {
+      console.error("Failed to toggle light:", error);
+    }
   }, []);
 
   const turnAllOn = useCallback(() => {
-    setTables((prev) => prev.map((t) => ({ ...t, lightOn: true })));
-  }, []);
+    tables.forEach(t => {
+      if (t.lightStatus !== 'ON' && t.lightStatus !== 'PENDING-ON') {
+        toggleLight(t.tableId, t.lightStatus);
+      }
+    });
+  }, [tables, toggleLight]);
 
   const turnAllOff = useCallback(() => {
-    setTables((prev) => prev.map((t) => ({ ...t, lightOn: false })));
-  }, []);
+    tables.forEach(t => {
+      if (t.lightStatus !== 'OFF' && t.lightStatus !== 'PENDING-OFF') {
+        toggleLight(t.tableId, t.lightStatus);
+      }
+    });
+  }, [tables, toggleLight]);
 
-  const isAllOn = tables.length > 0 && tables.every(t => t.lightOn);
-  const isAllOff = tables.length > 0 && tables.every(t => !t.lightOn);
+  const isAllOn = tables.length > 0 && tables.every(t => t.lightStatus === 'ON' || t.lightStatus === 'PENDING-ON');
+  const isAllOff = tables.length > 0 && tables.every(t => t.lightStatus === 'OFF' || t.lightStatus === 'PENDING-OFF');
 
   return (
     <div className="max-w-[1600px] mx-auto min-h-screen animate-in fade-in duration-300">
@@ -78,13 +217,10 @@ export default function Illumination() {
 
       {/* Premium Info Banner (Optimized for Mobile) */}
       <div className="relative overflow-hidden flex items-start md:items-center gap-5 p-5 md:p-6 rounded-[24px] mb-12 border border-white/10 bg-[#18181b] shadow-xl">
-        {/* Subtle background glow */}
         <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-light-on/30 to-transparent opacity-50" />
-
         <div className="relative bg-[#18181b] border border-white/10 text-light-on p-3.5 rounded-2xl flex-shrink-0 shadow-[0_0_20px_rgba(240,230,168,0.1)]">
           <Info size={24} strokeWidth={2.5} />
         </div>
-
         <div className="flex-1">
           <h3 className="text-white font-bold text-lg mb-1 tracking-tight">Manual Override Enabled</h3>
           <p className="text-text-dim text-[15px] font-medium leading-relaxed">
@@ -93,93 +229,18 @@ export default function Illumination() {
         </div>
       </div>
 
-      {/* Grid */}
+      {/* Grid - Database Key Anchoring Applied Here */}
       <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-4 gap-6 mb-12">
-        {tables.map((table) => {
-          const isBusy = table.status === 'busy';
-          const isOn = table.lightOn;
-
-          return (
-            <div
-              key={table.id}
-              onClick={() => toggleLight(table.id)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  toggleLight(table.id);
-                }
-              }}
-              className={`block relative group overflow-hidden rounded-[2rem] bg-[#18181b] border transition-colors duration-500 cursor-pointer flex flex-col justify-between h-[280px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.5)] select-none [-webkit-tap-highlight-color:transparent] active:scale-[0.98] ${isOn
-                ? 'border-light-on/40 bg-gradient-to-b from-[#1e1c16] to-[#18181b] hover:border-light-on/60 hover:shadow-[0_0_40px_rgba(240,230,168,0.25)] active:border-light-on/60 active:shadow-[0_0_40px_rgba(240,230,168,0.25)]'
-                : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02] active:border-white/20 active:bg-white/[0.02]'
-                }`}
-            >
-              {/* Giant Background Number with Parallax Hover Effect (Optimized) */}
-              <div className="absolute -bottom-6 -right-6 text-[200px] font-display font-black leading-none text-white opacity-[0.02] group-hover:opacity-[0.04] group-hover:scale-110 group-hover:-rotate-6 group-active:opacity-[0.04] group-active:scale-110 group-active:-rotate-6 transition-transform duration-700 pointer-events-none select-none z-0">
-                {table.id}
-              </div>
-
-              {/* Top Gradient Edge */}
-              <div className={`absolute top-0 left-0 w-full h-[2px] transition-all duration-500 ${isOn ? 'bg-gradient-to-r from-light-on to-transparent opacity-80 shadow-[0_0_15px_var(--color-light-on)]' : 'bg-gradient-to-r from-white to-transparent opacity-10 group-hover:opacity-30'}`} />
-
-              {/* Top Row: Light Status & Booking Badge */}
-              <div className="flex justify-between items-start z-10 relative">
-                <div className={`inline-flex items-center gap-2.5 px-4 py-2 rounded-full border transition-colors ${isOn
-                  ? 'bg-light-on/15 border-light-on/30 text-light-on shadow-[0_0_20px_rgba(240,230,168,0.2)]'
-                  : 'bg-white/5 border-white/10 text-text-dim'
-                  }`}>
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 transition-colors ${isOn ? 'bg-light-on shadow-[0_0_8px_var(--color-light-on)]' : 'bg-text-dim'}`} />
-                  <span className="text-xs font-bold tracking-widest uppercase whitespace-nowrap">{isOn ? 'Power On' : 'Standby'}</span>
-                </div>
-
-                <div className={`px-4 py-1.5 rounded-xl border font-bold text-[0.75rem] uppercase tracking-wider flex items-center justify-center ${isBusy ? 'bg-danger/10 text-danger border-danger/20' : 'bg-accent/10 text-accent-bright border-accent/20'}`}>
-                  {isBusy ? 'Busy' : 'Available'}
-                </div>
-              </div>
-
-              {/* Center: Table Name (Visible when Off/Available or always as a design element) */}
-              <div className="z-10 relative mt-auto">
-                {isBusy ? (
-                  <div className="space-y-5">
-                    {/* User Info */}
-                    <div className="flex items-center gap-4 group/user w-fit pr-8">
-                      <div className={`w-14 h-14 flex-shrink-0 rounded-full bg-gradient-to-tr from-white/10 to-white/5 border flex items-center justify-center text-white font-display font-bold text-2xl shadow-lg shadow-black/50 transition ${isOn ? 'border-light-on/40 text-light-on' : 'border-white/10 group-hover:border-white/30'}`}>
-                        {table.booker.charAt(0)}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-2xl font-bold tracking-tight text-white truncate">{table.booker}</h4>
-                        <p className="text-text-dim text-sm flex items-center gap-1.5 mt-1 font-medium truncate">
-                          <PhoneIcon /> {table.mobile}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Session Box */}
-                    <div className="flex items-center gap-3 bg-white/[0.05] px-4 py-3 rounded-2xl border border-white/10 w-fit">
-                      <ClockIcon />
-                      <p className="text-sm font-semibold text-white/90 flex items-center gap-2 whitespace-nowrap">
-                        Ends at <span className="text-white">{table.endTime}</span>
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center opacity-80 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-500 pb-4">
-                    <div className="relative w-20 h-20 mb-5 flex items-center justify-center">
-                      <div className={`absolute inset-0 rounded-full border-2 border-dashed transition duration-700 ${isOn ? 'border-light-on/40 group-hover:border-light-on/80 group-hover:rotate-90' : 'border-white/20 group-hover:border-white/40 group-hover:rotate-90'}`} />
-                      <div className={`w-12 h-12 rounded-full border flex items-center justify-center group-hover:scale-110 transition duration-500 ${isOn ? 'bg-light-on/10 border-light-on/30 text-light-on shadow-lg' : 'bg-white/5 border-white/10 text-white/50'}`}>
-                        <Lightbulb size={24} />
-                      </div>
-                    </div>
-                    <h3 className="text-3xl font-display font-black text-white/90 tracking-tighter mb-1">Table {table.id}</h3>
-                    <p className={`text-sm font-medium tracking-wide ${isOn ? 'text-light-on/80' : 'text-text-dim'}`}>Tap to toggle</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
+        {tables.length > 0 ? (
+          tables.map((table) => (
+            <TableCard key={table.tableId} table={table} onToggle={toggleLight} />
+          ))
+        ) : (
+          <div className="col-span-full flex flex-col items-center justify-center text-white/50 py-20 gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-light-on/50" />
+            <p className="text-sm font-medium">Syncing with hardware...</p>
+          </div>
+        )}
       </div>
     </div>
   );
