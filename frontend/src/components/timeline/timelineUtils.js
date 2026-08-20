@@ -1,6 +1,6 @@
 export const TIMELINE_CONFIG = {
   OPEN_HOUR: 10,
-  CLOSE_HOUR: 30, // 12 AM
+  CLOSE_HOUR: 24, // 12 AM
   PIXELS_PER_MINUTE: 3,
   MIN_SLOT_MINS: 15,
 };

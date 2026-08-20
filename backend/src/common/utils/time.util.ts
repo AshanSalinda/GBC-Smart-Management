@@ -22,10 +22,15 @@ export function getOperationalDayBounds(
   const [startHour, startMinute] = venueStartTime.split(':').map(Number);
 
   // Parse target date in venue timezone
-  const baseDate =
+  let baseDate =
     typeof targetDate === 'string'
       ? DateTime.fromISO(targetDate, { zone: VENUE_TIMEZONE })
       : DateTime.fromJSDate(targetDate, { zone: VENUE_TIMEZONE });
+
+  // If the time is before the venue's opening hour, it logically belongs to the previous operational day
+  if (baseDate.hour < startHour) {
+    baseDate = baseDate.minus({ days: 1 });
+  }
 
   // Operational day start: target date at venue opening time
   const start = baseDate
