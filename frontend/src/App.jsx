@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import SocketManager from './components/SocketManager';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingFallback from './components/LoadingFallback';
 import MainLayout from './components/layout/MainLayout';
@@ -20,6 +21,7 @@ const Admin = React.lazy(() => import('./pages/Admin'));
 export default function App() {
   return (
     <AuthProvider>
+      <SocketManager />
       <BrowserRouter>
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
