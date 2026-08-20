@@ -170,21 +170,32 @@ export class BookingsService {
         throw new NotFoundException('Booking not found or already cancelled.');
       }
 
-      // If checkOutTime is being modified, re-validate
-      if (dto.checkOutTime) {
-        const newCheckOut = new Date(dto.checkOutTime);
-        if (newCheckOut <= freshBooking.checkInTime) {
+      // If checkInTime or checkOutTime is being modified, re-validate
+      if (dto.checkOutTime || dto.checkInTime) {
+        const newCheckIn = dto.checkInTime ? new Date(dto.checkInTime) : freshBooking.checkInTime;
+        const newCheckOut = dto.checkOutTime ? new Date(dto.checkOutTime) : freshBooking.checkOutTime;
+
+        if (newCheckOut <= newCheckIn) {
           throw new BadRequestException('checkOutTime must be after checkInTime.');
         }
 
         // Re-check for overlaps excluding this booking (serialized by mutex)
-        await this.assertNoOverlap(freshBooking.tableId, freshBooking.checkInTime, newCheckOut, id);
+        await this.assertNoOverlap(freshBooking.tableId, newCheckIn, newCheckOut, id);
 
         // Recompute duration
+        freshBooking.checkInTime = newCheckIn;
         freshBooking.checkOutTime = newCheckOut;
         freshBooking.durationMinutes = Math.round(
-          (newCheckOut.getTime() - freshBooking.checkInTime.getTime()) / 60000,
+          (newCheckOut.getTime() - newCheckIn.getTime()) / 60000,
         );
+      }
+
+      if (dto.bookerName !== undefined) {
+        freshBooking.bookerName = dto.bookerName;
+      }
+
+      if (dto.bookerMobile !== undefined) {
+        freshBooking.bookerMobile = dto.bookerMobile;
       }
 
       if (dto.amount !== undefined) {
@@ -202,6 +213,9 @@ export class BookingsService {
       const now = new Date();
       if (freshBooking.checkInTime <= now && freshBooking.checkOutTime > now) {
         this.venueCacheService.updateCurrentBooking(freshBooking.tableId, {
+          bookerName: freshBooking.bookerName,
+          bookerMobile: freshBooking.bookerMobile,
+          checkInTime: freshBooking.checkInTime.toISOString(),
           checkOutTime: freshBooking.checkOutTime.toISOString(),
           durationMinutes: freshBooking.durationMinutes,
           amount: freshBooking.amount,
