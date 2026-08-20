@@ -16,13 +16,26 @@ export const createBooking = async (bookingData) => {
 };
 
 export const updateBooking = async (bookingId, updatedData) => {
-  const payload = {
-    checkInTime: new Date(updatedData.startTime).toISOString(),
-    checkOutTime: new Date(updatedData.startTime + updatedData.duration).toISOString(),
-    amount: updatedData.amount,
-    isPaid: updatedData.paid
-  };
+  const payload = {};
+
+  if (updatedData.startTime !== undefined && updatedData.duration !== undefined) {
+    payload.checkInTime = new Date(updatedData.startTime).toISOString();
+    payload.checkOutTime = new Date(updatedData.startTime + updatedData.duration).toISOString();
+  }
+
+  if (updatedData.amount !== undefined) {
+    payload.amount = updatedData.amount;
+  }
+
+  if (updatedData.paid !== undefined) {
+    payload.isPaid = updatedData.paid;
+  }
 
   const response = await apiClient.patch(`/api/bookings/${bookingId}`, payload);
+  return response.data;
+};
+
+export const cancelBooking = async (bookingId) => {
+  const response = await apiClient.delete(`/api/bookings/${bookingId}`);
   return response.data;
 };
