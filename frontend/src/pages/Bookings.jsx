@@ -3,7 +3,7 @@ import BookingTimeline from '../components/timeline/BookingTimeline';
 import CreateBookingModal from '../components/timeline/CreateBookingModal';
 import useStore from '../store/useStore';
 
-import { auth } from '../config/firebase';
+import { createBooking, updateBooking } from '../api/bookings';
 
 const formatTime = (ms) => {
   if (!ms) return '--:--';
@@ -173,25 +173,8 @@ export default function Bookings() {
   }, []);
 
   const handleCreateBooking = async (bookingData) => {
-    const payload = {
-      tableId: bookingData.tableId,
-      bookerName: bookingData.player,
-      bookerMobile: bookingData.mobile,
-      checkInTime: new Date(bookingData.startTime).toISOString(),
-      checkOutTime: new Date(bookingData.startTime + bookingData.duration).toISOString(),
-      amount: bookingData.amount,
-      isPaid: bookingData.paid
-    };
-
     try {
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) return;
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
-      await fetch(`${BACKEND_URL}/api/bookings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
+      await createBooking(bookingData);
       setSelectedSlot(null);
     } catch (e) {
       console.error("Failed to create booking:", e);
@@ -199,22 +182,8 @@ export default function Bookings() {
   };
 
   const handleUpdateBooking = async (updatedData) => {
-    const payload = {
-      checkInTime: new Date(updatedData.startTime).toISOString(),
-      checkOutTime: new Date(updatedData.startTime + updatedData.duration).toISOString(),
-      amount: updatedData.amount,
-      isPaid: updatedData.paid
-    };
-
     try {
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) return;
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
-      await fetch(`${BACKEND_URL}/api/bookings/${editingBooking.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
+      await updateBooking(editingBooking.id, updatedData);
       setEditingBooking(null);
     } catch (e) {
       console.error("Failed to update booking:", e);
