@@ -1,6 +1,6 @@
 export const TIMELINE_CONFIG = {
   OPEN_HOUR: 10,
-  CLOSE_HOUR: 24, // 12 AM
+  CLOSE_HOUR: 30, // 12 AM
   PIXELS_PER_MINUTE: 3,
   MIN_SLOT_MINS: 15,
 };
@@ -65,13 +65,13 @@ export function getTimelineHeaders(closeHour = TIMELINE_CONFIG.CLOSE_HOUR) {
     const isMidnight = hour24 === 0;
     const hour12 = isMidnight ? 12 : (hour24 % 12 || 12);
     const ampm = isMidnight ? 'AM' : (hour24 < 12 ? 'AM' : 'PM');
-    
+
     headers.push({
       type: 'hour',
       label: `${hour12}:00 ${ampm}`,
       left: (h - TIMELINE_CONFIG.OPEN_HOUR) * 60 * TIMELINE_CONFIG.PIXELS_PER_MINUTE,
     });
-    
+
     // Don't add sub-markers after the last hour
     if (h < closeHour) {
       headers.push({
