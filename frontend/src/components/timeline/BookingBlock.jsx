@@ -7,9 +7,13 @@ const formatTime = (ms) => {
   return new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 };
 
-export default function BookingBlock({ booking, onEditBooking }) {
+export default function BookingBlock({ booking, onEditBooking, openHour }) {
   const [showModal, setShowModal] = useState(false);
-  const left = timeToPixels(booking.startTime);
+  const isPlaying = Date.now() >= booking.startTime && Date.now() <= (booking.startTime + booking.duration);
+  const isPast = Date.now() > (booking.startTime + booking.duration);
+
+  // Position and Width
+  const left = timeToPixels(booking.startTime, openHour);
   const width = durationToPixels(booking.duration);
   const isPaid = booking.paid;
 

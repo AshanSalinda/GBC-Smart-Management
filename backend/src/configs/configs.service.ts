@@ -20,7 +20,7 @@ export class ConfigsService implements OnModuleInit {
       await this.configModel.create({
         key: 'GLOBAL_CONFIG',
         hourlyRate: 1500,
-        workingHoursPerDay: 16,
+        venueCloseTime: '00:00',
         venueStartTime: '09:00',
       });
       this.logger.log('Default GLOBAL_CONFIG created.');
@@ -38,7 +38,7 @@ export class ConfigsService implements OnModuleInit {
    * Updates global configuration values.
    */
   async updateConfig(
-    updates: Partial<{ hourlyRate: number; workingHoursPerDay: number; venueStartTime: string }>,
+    updates: Partial<{ hourlyRate: number; venueCloseTime: string; venueStartTime: string }>,
   ): Promise<ConfigDocument | null> {
     const config = await this.configModel
       .findOneAndUpdate(

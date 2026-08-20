@@ -146,6 +146,8 @@ const TableSummaryCard = React.memo(({ table }) => {
 export default function Bookings() {
   const tables = useStore(state => state.tables);
   const rawTimeline = useStore(state => state.timeline) || [];
+  const globalConfig = useStore(state => state.globalConfig);
+  const setGlobalConfig = useStore(state => state.setGlobalConfig);
   
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [editingBooking, setEditingBooking] = useState(null);
@@ -165,12 +167,32 @@ export default function Bookings() {
     }));
   }, [rawTimeline]);
 
+  // Fetch Global Config once on mount
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const { getConfig } = await import('../api/configs');
+        const data = await getConfig();
+        if (data) {
+          setGlobalConfig(data);
+        }
+      } catch (err) {
+        console.error("Failed to load global config:", err);
+      }
+    };
+    if (!globalConfig) {
+      loadConfig();
+    }
+  }, [globalConfig, setGlobalConfig]);
+
   // Defer the heavy timeline rendering by a few frames to ensure the 
   // page mounts and transitions instantly on mobile devices.
   useEffect(() => {
-    const timer = setTimeout(() => setShowTimeline(true), 150);
-    return () => clearTimeout(timer);
-  }, []);
+    if (globalConfig) {
+      const timer = setTimeout(() => setShowTimeline(true), 150);
+      return () => clearTimeout(timer);
+    }
+  }, [globalConfig]);
 
   const handleCreateBooking = async (bookingData) => {
     try {
@@ -221,6 +243,7 @@ export default function Bookings() {
           bookings={timelineBookings}
           onSlotClick={setSelectedSlot}
           onEditBooking={setEditingBooking}
+          globalConfig={globalConfig}
         />
       ) : (
         <div className="h-[400px] w-full rounded-[16px] border border-[#2a2a2e] flex flex-col items-center justify-center bg-[#151517] shadow-xl mt-4 animate-pulse">
@@ -239,6 +262,7 @@ export default function Bookings() {
         slot={selectedSlot}
         existingBooking={editingBooking}
         tableBookings={timelineBookings.filter(b => b.tableId === (selectedSlot?.tableId || editingBooking?.tableId))}
+        globalConfig={globalConfig}
         onConfirm={(data) => {
           if (editingBooking) {
             handleUpdateBooking(data);

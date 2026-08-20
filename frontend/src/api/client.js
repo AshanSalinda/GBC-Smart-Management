@@ -32,42 +32,17 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response Interceptor: Handle Global Errors and Token Refresh
+// Response Interceptor: Handle Global Errors
 apiClient.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    // Globally handle 401 Unauthorized (e.g., expired token)
-    if (error.response && error.response.status === 401 && !originalRequest._retry) {
-      if (auth.currentUser) {
-        originalRequest._retry = true; // Mark request as retried to prevent infinite loops
-
-        try {
-          console.log('Token likely expired. Attempting to force refresh...');
-          // Pass `true` to force Firebase to fetch a fresh token from the server
-          const newToken = await auth.currentUser.getIdToken(true);
-          
-          if (newToken) {
-            // Update the failed request's header with the fresh token
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            
-            // Seamlessly retry the original request
-            return apiClient(originalRequest);
-          }
-        } catch (refreshError) {
-          console.error('Failed to refresh token. Forcing sign out...', refreshError);
-          // If refresh fails (e.g. account disabled, deleted), sign them out
-          signOut(auth).catch((err) => console.error('Failed to sign out after refresh failure:', err));
-          return Promise.reject(refreshError);
-        }
-      } else {
-        // If there's no user object but we got a 401, sign out to clear state
-        console.warn('Unauthorized request with no active user. Forcing sign out...');
-        signOut(auth).catch((err) => console.error('Failed to sign out on 401:', err));
-      }
+  (error) => {
+    // Globally handle 401 Unauthorized (e.g. expired or invalid token)
+    if (error.response && error.response.status === 401) {
+      console.warn('Unauthorized request (401). Forcing sign out...');
+      // Signing out of Firebase will trigger onAuthStateChanged in AuthContext
+      // which safely sets user to null, and ProtectedRoute redirects to /login automatically.
+      signOut(auth).catch((err) => console.error('Failed to sign out on 401:', err));
     }
-    
     return Promise.reject(error);
   }
 );

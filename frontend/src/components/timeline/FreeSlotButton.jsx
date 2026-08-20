@@ -1,7 +1,7 @@
 import { timeToPixels, durationToPixels } from './timelineUtils';
 
-export default function FreeSlotButton({ startTimestamp, durationMs, onClick }) {
-  const left = timeToPixels(startTimestamp);
+export default function FreeSlotButton({ startTimestamp, durationMs, onClick, openHour }) {
+  const left = timeToPixels(startTimestamp, openHour);
   const width = durationToPixels(durationMs);
 
   const formatDuration = (ms) => {
