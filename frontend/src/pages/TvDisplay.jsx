@@ -1,20 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import SoundSystem from '../utils/SoundSystem';
-
-// MOCK DATA: Configured to demonstrate live transitions 5 seconds after page load!
-const MOCK_TABLES = [
-  // T1: 55s elapsed -> Starts as "STARTED", becomes "PLAYING" in 5s
-  { id: 1, status: 'busy', player: 'Rahul Mehta', startTime: Date.now() - 55000, duration: 60 * 60000 },
-
-  // T2: 10m 5s left -> Starts as "PLAYING", becomes "ENDING SOON" in 5s
-  { id: 2, status: 'busy', player: 'Sarah Connor', startTime: Date.now() - (48 * 60000 + 55000), duration: 60 * 60000 },
-
-  // T3: 55s overdue -> Starts as "TIME UP", becomes "AVAILABLE" in 5s
-  { id: 3, status: 'busy', player: 'Alex Rivera', startTime: Date.now() - (59 * 60000 + 55000), duration: 60 * 60000 },
-
-  // T4: Available (No Session)
-  { id: 4, status: 'available', player: null, startTime: null, duration: null }
-];
+import useStore from '../store/useStore';
 
 // --- HELPER FUNCTIONS ---
 const formatTimeRemaining = (start, duration, now) => {
@@ -38,6 +24,7 @@ const formatTimeRange = (start, duration) => {
 };
 
 const getProgress = (start, duration, now) => {
+  if (!duration) return 0;
   const end = start + duration;
   const elapsed = now - start;
   const percent = (elapsed / duration) * 100;
@@ -46,7 +33,7 @@ const getProgress = (start, duration, now) => {
 
 
 // --- HEADER CLOCK COMPONENT ---
-function HeaderClock({ isConnected, onToggleConnection }) {
+function HeaderClock({ isConnected }) {
   const [now, setNow] = useState(Date.now());
 
   // Use a standard slow tick since this only shows minutes
@@ -74,7 +61,7 @@ function HeaderClock({ isConnected, onToggleConnection }) {
       </div>
 
       <div className="flex items-center gap-3 md:gap-[2vw]">
-        <div className="flex items-center gap-2 md:gap-[0.8vw] bg-white/5 border border-white/10 px-1.5 py-1.5 md:px-[1.5vw] md:py-[1vh] rounded-full cursor-pointer transition-colors hover:bg-white/10" onClick={onToggleConnection}>
+        <div className="flex items-center gap-2 md:gap-[0.8vw] bg-white/5 border border-white/10 px-1.5 py-1.5 md:px-[1.5vw] md:py-[1vh] rounded-full transition-colors">
           <div className={`w-2.5 h-2.5 md:w-[1.5vh] md:h-[1.5vh] rounded-full ${isConnected ? 'bg-accent animate-pulse shadow-[0_0_1vh_rgba(74,188,109,0.6)]' : 'bg-danger shadow-[0_0_1vh_rgba(240,82,82,0.6)]'}`} />
           <span className={`hidden sm:inline text-xs md:text-[1.75vh] font-bold tracking-widest uppercase ${isConnected ? 'text-accent' : 'text-danger'}`}>
             {isConnected ? 'Live' : 'Disconnected'}
@@ -91,7 +78,18 @@ function HeaderClock({ isConnected, onToggleConnection }) {
 
 
 // --- TABLE CARD COMPONENT ---
-function TableCard({ table, onAutoReset, previousStatesRef }) {
+const tablePropsAreEqual = (prevProps, nextProps) => {
+  const prev = prevProps.table;
+  const next = nextProps.table;
+  
+  return (
+    prev.status === next.status &&
+    prev.currentBooking?.id === next.currentBooking?.id &&
+    prev.currentBooking?.checkOutTime === next.currentBooking?.checkOutTime
+  );
+};
+
+const TableCard = React.memo(({ table, previousStatesRef }) => {
   const [now, setNow] = useState(Date.now());
 
   // High performance internal tick using requestAnimationFrame
@@ -105,24 +103,25 @@ function TableCard({ table, onAutoReset, previousStatesRef }) {
     return () => cancelAnimationFrame(frameId);
   }, []);
 
-  const isBusy = table.status === 'busy';
+  const isBusy = table.status === 'BUSY';
+  const tableId = table.tableId;
+  const tableName = table.tableName || `T${tableId}`;
+  
+  const startTime = isBusy && table.currentBooking?.checkInTime ? new Date(table.currentBooking.checkInTime).getTime() : 0;
+  const endTime = isBusy && table.currentBooking?.checkOutTime ? new Date(table.currentBooking.checkOutTime).getTime() : 0;
+  const duration = isBusy ? endTime - startTime : 0;
+  const player = isBusy && table.currentBooking?.bookerName ? table.currentBooking.bookerName : 'Walk-in';
 
   // Safely calculate hook dependencies
-  const remainingMs = isBusy ? (table.startTime + table.duration) - now : 0;
-  const elapsed = isBusy ? now - table.startTime : 0;
+  const remainingMs = isBusy ? endTime - now : 0;
+  const elapsed = isBusy ? now - startTime : 0;
   const totalSeconds = isBusy ? Math.floor(remainingMs / 1000) : 0;
 
-  // Audio and Auto Reset Logic (Must be declared before any early returns!)
+  // Audio Logic
   useEffect(() => {
     if (!isBusy) return;
 
-    // 1 minute overdue reset check
-    if (remainingMs <= -60000) {
-      onAutoReset(table.id);
-      return;
-    }
-
-    const prevState = previousStatesRef.current[table.id] || {
+    const prevState = previousStatesRef.current[tableId] || {
       alertedStarted: false,
       alertedEndingSoon: false,
       alertedFinal: false,
@@ -149,8 +148,8 @@ function TableCard({ table, onAutoReset, previousStatesRef }) {
       prevState.alertedEnded = true;
     }
 
-    previousStatesRef.current[table.id] = prevState;
-  }, [isBusy, now, table.id, elapsed, totalSeconds, remainingMs, onAutoReset, previousStatesRef]);
+    previousStatesRef.current[tableId] = prevState;
+  }, [isBusy, now, tableId, elapsed, totalSeconds, remainingMs, previousStatesRef]);
 
   if (!isBusy) {
     // Render Available Card
@@ -159,7 +158,7 @@ function TableCard({ table, onAutoReset, previousStatesRef }) {
         <div className="p-5 md:p-[3.5vh] flex-1 flex flex-col z-10 relative">
           <div className="flex justify-between items-start">
             <h2 className="text-4xl md:text-[6vh] font-display font-black text-white/50 tracking-tighter leading-none drop-shadow-sm">
-              T{table.id}
+              {tableName}
             </h2>
             <div className="px-3 py-1 md:px-[2vh] md:py-[0.8vh] rounded-full border border-accent/20 bg-accent/10 text-accent shadow-[inset_0_1px_1px_rgba(74,188,109,0.2)] font-bold text-[0.65rem] md:text-[1.5vh] tracking-widest uppercase">
               AVAILABLE
@@ -185,7 +184,7 @@ function TableCard({ table, onAutoReset, previousStatesRef }) {
   }
 
   // Busy calculations
-  const progress = getProgress(table.startTime, table.duration, now);
+  const progress = getProgress(startTime, duration, now);
   const totalRemainingMins = remainingMs / 60000;
 
   const isEnded = remainingMs <= 0;
@@ -233,7 +232,7 @@ function TableCard({ table, onAutoReset, previousStatesRef }) {
       <div className="p-5 md:p-[3.5vh] flex-1 flex flex-col z-10 relative">
         <div className="flex justify-between items-start">
           <h2 className="text-4xl md:text-[6vh] font-display font-black text-white/50 tracking-tighter leading-none drop-shadow-sm">
-            T{table.id}
+            {tableName}
           </h2>
           <div className={`px-3 py-1 md:px-[2vh] md:py-[0.8vh] rounded-full border font-bold text-[0.65rem] md:text-[1.5vh] tracking-widest uppercase ${badgeBg}`}>
             {badgeText}
@@ -245,7 +244,7 @@ function TableCard({ table, onAutoReset, previousStatesRef }) {
             {isEnded ? 'Overdue By' : 'Time Left'}
           </p>
           <p className={`text-6xl md:text-[12vh] font-display font-medium tracking-tight leading-none tabular-nums ${timerColor} mt-2 md:mt-[1vh]`}>
-            {isEnded ? '00:00:00' : formatTimeRemaining(table.startTime, table.duration, now)}
+            {isEnded ? '00:00:00' : formatTimeRemaining(startTime, duration, now)}
           </p>
         </div>
 
@@ -253,13 +252,13 @@ function TableCard({ table, onAutoReset, previousStatesRef }) {
           <div>
             <p className="text-text-dim text-[0.65rem] md:text-[1.5vh] font-medium uppercase tracking-wider mb-1 md:mb-[0.5vh]">Playing Now</p>
             <p className="text-lg md:text-[3vh] text-white/80 font-bold tracking-tight truncate leading-none max-w-[40vw] md:max-w-[20vw]">
-              {table.player}
+              {player}
             </p>
           </div>
           <div className="text-right">
             <p className="text-text-dim text-[0.65rem] md:text-[1.5vh] font-medium uppercase tracking-wider mb-1 md:mb-[0.5vh]">Session</p>
             <p className="text-sm md:text-[2.2vh] text-white/80 font-semibold tracking-wide leading-none">
-              {formatTimeRange(table.startTime, table.duration)}
+              {formatTimeRange(startTime, duration)}
             </p>
           </div>
         </div>
@@ -275,32 +274,15 @@ function TableCard({ table, onAutoReset, previousStatesRef }) {
       <div className={`hidden md:block absolute top-0 right-0 w-48 h-48 md:w-[30vh] md:h-[30vh] rounded-full blur-[64px] md:blur-[20vh] pointer-events-none opacity-20 ${glowColor}`} />
     </div>
   );
-}
+}, tablePropsAreEqual);
 
 
 // --- MAIN APP COMPONENT ---
 export default function TvDisplay() {
-  const [tables, setTables] = useState(MOCK_TABLES);
+  const tables = useStore(state => state.tables);
+  const isConnected = useStore(state => state.isConnected);
   const [isStarted, setIsStarted] = useState(false);
-  const [isConnected, setIsConnected] = useState(true);
   const previousStates = useRef({});
-
-  const handleAutoReset = (tableId) => {
-    setTables(current => current.map(t => {
-      if (t.id === tableId) {
-        if (previousStates.current[tableId]) {
-          previousStates.current[tableId] = {
-            alertedStarted: false,
-            alertedEndingSoon: false,
-            alertedFinal: false,
-            alertedEnded: false
-          };
-        }
-        return { ...t, status: 'available', player: null, startTime: null, duration: null };
-      }
-      return t;
-    }));
-  };
 
   const handleStart = () => {
     SoundSystem.init();
@@ -337,19 +319,23 @@ export default function TvDisplay() {
       <div className="hidden md:block absolute bottom-0 right-1/4 w-[50vw] h-[50vw] bg-accent/[0.03] rounded-full blur-[15vh] pointer-events-none translate-y-1/2 -z-10" />
 
       {/* Extracted Header Clock Component */}
-      <HeaderClock isConnected={isConnected} onToggleConnection={() => setIsConnected(!isConnected)} />
+      <HeaderClock isConnected={isConnected} />
 
       <main className="flex-1 p-4 md:p-[2.5vh] flex flex-col items-center overflow-y-auto overflow-x-hidden md:overflow-hidden bg-transparent">
         <div className="grid grid-cols-1 md:grid-cols-2 grid-rows-none md:grid-rows-2 gap-4 md:gap-[2.5vh] h-auto md:h-full w-full max-w-[200vh]">
-          {tables.map(table => (
-            /* Extracted Table Card Component */
-            <TableCard
-              key={table.id}
-              table={table}
-              onAutoReset={handleAutoReset}
-              previousStatesRef={previousStates}
-            />
-          ))}
+          {tables.length > 0 ? (
+            tables.map(table => (
+              <TableCard
+                key={table.tableId}
+                table={table}
+                previousStatesRef={previousStates}
+              />
+            ))
+          ) : (
+            <div className="col-span-full flex h-full items-center justify-center text-white/50 text-2xl font-bold">
+              Waiting for live table data...
+            </div>
+          )}
         </div>
       </main>
     </div>
