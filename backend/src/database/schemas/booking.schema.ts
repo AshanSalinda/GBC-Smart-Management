@@ -3,7 +3,18 @@ import { HydratedDocument } from 'mongoose';
 
 export type BookingDocument = HydratedDocument<Booking>;
 
-@Schema({ timestamps: { createdAt: 'createdAt', updatedAt: false } })
+@Schema({ 
+  timestamps: { createdAt: 'createdAt', updatedAt: false },
+  toJSON: {
+    virtuals: true,
+    transform: (doc, ret: Record<string, any>) => {
+      ret.id = ret._id;
+      delete ret._id;
+      delete ret.__v;
+      return ret;
+    }
+  }
+})
 export class Booking {
   @Prop({ type: Number, required: true, min: 1, max: 4, index: true })
   tableId: number;

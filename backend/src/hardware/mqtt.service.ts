@@ -2,9 +2,8 @@ import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import { OnEvent } from '@nestjs/event-emitter';
 import * as mqtt from 'mqtt';
-import { VenueCacheService } from '../state/venue-cache.service';
-import { TABLE_UPDATED_EVENT } from '../common/events/event-types';
-import type { TableUpdatedPayload } from '../common/events/event-types';
+import { VenueCacheService, TableState } from '../state/venue-cache.service';
+import { TABLES_UPDATED_EVENT } from '../common/events/event-types';
 
 /**
  * MQTT Client for ESP32 relay control.
@@ -96,25 +95,25 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
    * Listens for table state changes from the in-memory cache.
    * Publishes the appropriate relay command to the ESP32.
    */
-  @OnEvent(TABLE_UPDATED_EVENT)
-  handleTableUpdated(payload: TableUpdatedPayload): void {
-    // Only publish to hardware if there is a pending transition
-    if (payload.lightStatus !== 'PENDING-ON' && payload.lightStatus !== 'PENDING-OFF') {
-      return;
+  @OnEvent(TABLES_UPDATED_EVENT)
+  handleTablesUpdated(tables: TableState[]): void {
+    for (const payload of tables) {
+      // Only publish to hardware if there is a pending transition
+      if (payload.lightStatus === 'PENDING-ON' || payload.lightStatus === 'PENDING-OFF') {
+        const relayState = payload.lightStatus === 'PENDING-ON' ? 'ON' : 'OFF';
+
+        const commandPayload = {
+          commandId: `cmd_${Date.now()}_${payload.tableId}`,
+          tableId: payload.tableId,
+          relayState,
+          timestamp: new Date().toISOString(),
+        };
+
+        const topic = `gbc/hardware/table/${payload.tableId}/set`;
+        this.client.publish(topic, JSON.stringify(commandPayload), { qos: 1 });
+        this.logger.log(`[MQTT] Published to ${topic}: relay ${relayState}`);
+      }
     }
-
-    const relayState = payload.lightStatus === 'PENDING-ON' ? 'ON' : 'OFF';
-
-    const commandPayload = {
-      commandId: `cmd_${Date.now()}`,
-      tableId: payload.tableId,
-      relayState,
-      timestamp: new Date().toISOString(),
-    };
-
-    const topic = `gbc/hardware/table/${payload.tableId}/set`;
-    this.client.publish(topic, JSON.stringify(commandPayload), { qos: 1 });
-    this.logger.log(`[MQTT] Published to ${topic}: relay ${relayState}`);
   }
 
   /* ─── Incoming Message Handler ──────────────────────────────── */
