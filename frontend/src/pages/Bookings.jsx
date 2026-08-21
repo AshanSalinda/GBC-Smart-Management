@@ -3,7 +3,7 @@ import BookingTimeline from '../components/timeline/BookingTimeline';
 import CreateBookingModal from '../components/timeline/CreateBookingModal';
 import useStore from '../store/useStore';
 
-import { auth } from '../config/firebase';
+import { createBooking, updateBooking } from '../api/bookings';
 
 const formatTime = (ms) => {
   if (!ms) return '--:--';
@@ -146,6 +146,8 @@ const TableSummaryCard = React.memo(({ table }) => {
 export default function Bookings() {
   const tables = useStore(state => state.tables);
   const rawTimeline = useStore(state => state.timeline) || [];
+  const globalConfig = useStore(state => state.globalConfig);
+  const setGlobalConfig = useStore(state => state.setGlobalConfig);
   
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [editingBooking, setEditingBooking] = useState(null);
@@ -165,33 +167,36 @@ export default function Bookings() {
     }));
   }, [rawTimeline]);
 
+  // Fetch Global Config once on mount
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const { getConfig } = await import('../api/configs');
+        const data = await getConfig();
+        if (data) {
+          setGlobalConfig(data);
+        }
+      } catch (err) {
+        console.error("Failed to load global config:", err);
+      }
+    };
+    if (!globalConfig) {
+      loadConfig();
+    }
+  }, [globalConfig, setGlobalConfig]);
+
   // Defer the heavy timeline rendering by a few frames to ensure the 
   // page mounts and transitions instantly on mobile devices.
   useEffect(() => {
-    const timer = setTimeout(() => setShowTimeline(true), 150);
-    return () => clearTimeout(timer);
-  }, []);
+    if (globalConfig) {
+      const timer = setTimeout(() => setShowTimeline(true), 150);
+      return () => clearTimeout(timer);
+    }
+  }, [globalConfig]);
 
   const handleCreateBooking = async (bookingData) => {
-    const payload = {
-      tableId: bookingData.tableId,
-      bookerName: bookingData.player,
-      bookerMobile: bookingData.mobile,
-      checkInTime: new Date(bookingData.startTime).toISOString(),
-      checkOutTime: new Date(bookingData.startTime + bookingData.duration).toISOString(),
-      amount: bookingData.amount,
-      isPaid: bookingData.paid
-    };
-
     try {
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) return;
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
-      await fetch(`${BACKEND_URL}/api/bookings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
+      await createBooking(bookingData);
       setSelectedSlot(null);
     } catch (e) {
       console.error("Failed to create booking:", e);
@@ -199,22 +204,8 @@ export default function Bookings() {
   };
 
   const handleUpdateBooking = async (updatedData) => {
-    const payload = {
-      checkInTime: new Date(updatedData.startTime).toISOString(),
-      checkOutTime: new Date(updatedData.startTime + updatedData.duration).toISOString(),
-      amount: updatedData.amount,
-      isPaid: updatedData.paid
-    };
-
     try {
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) return;
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
-      await fetch(`${BACKEND_URL}/api/bookings/${editingBooking.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
+      await updateBooking(editingBooking.id, updatedData);
       setEditingBooking(null);
     } catch (e) {
       console.error("Failed to update booking:", e);
@@ -252,6 +243,7 @@ export default function Bookings() {
           bookings={timelineBookings}
           onSlotClick={setSelectedSlot}
           onEditBooking={setEditingBooking}
+          globalConfig={globalConfig}
         />
       ) : (
         <div className="h-[400px] w-full rounded-[16px] border border-[#2a2a2e] flex flex-col items-center justify-center bg-[#151517] shadow-xl mt-4 animate-pulse">
@@ -270,6 +262,7 @@ export default function Bookings() {
         slot={selectedSlot}
         existingBooking={editingBooking}
         tableBookings={timelineBookings.filter(b => b.tableId === (selectedSlot?.tableId || editingBooking?.tableId))}
+        globalConfig={globalConfig}
         onConfirm={(data) => {
           if (editingBooking) {
             handleUpdateBooking(data);

@@ -1,7 +1,8 @@
 import React, { useCallback } from 'react';
 import { Lightbulb, Power, Info, Loader2 } from 'lucide-react';
 import useStore from '../store/useStore';
-import { auth } from '../config/firebase';
+
+import { toggleLight as toggleLightApi } from '../api/lights';
 
 const PhoneIcon = () => (
   <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -28,7 +29,7 @@ const formatTime = (isoString) => {
 const tablePropsAreEqual = (prevProps, nextProps) => {
   const prev = prevProps.table;
   const next = nextProps.table;
-  
+
   return (
     prev.status === next.status &&
     prev.lightStatus === next.lightStatus &&
@@ -137,24 +138,9 @@ export default function Illumination() {
   const toggleLight = useCallback(async (tableId, currentLightStatus) => {
     // Determine the target state opposite of current
     const targetState = currentLightStatus === 'ON' || currentLightStatus === 'PENDING-ON' ? 'OFF' : 'ON';
-    
+
     try {
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) {
-        console.warn("User not authenticated to toggle light");
-        return;
-      }
-      
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
-      await fetch(`${BACKEND_URL}/api/lights/toggle`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ tableId, targetState })
-      });
-      // Do NOT manually update local state. Let the WebSocket provide the absolute truth.
+      await toggleLightApi(tableId, targetState);
     } catch (error) {
       console.error("Failed to toggle light:", error);
     }

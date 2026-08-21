@@ -2,14 +2,16 @@ import { useState, useEffect } from 'react';
 import Modal from '../ui/Modal';
 import { TIMELINE_CONFIG, getTimelineStartOfDay } from './timelineUtils';
 
-const HOURLY_RATE = 15.0; // Global rate config
-
 const inputBase = "w-full bg-[#121214] border border-[#2a2a2e] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent focus:shadow-[0_0_15px_rgba(74,188,109,0.15)] transition-all font-medium placeholder-white/20";
 const labelBase = "block text-text-dim text-[0.7rem] uppercase font-bold tracking-wider mb-2 ml-1";
 
-export default function CreateBookingModal({ isOpen, onClose, slot, existingBooking, tableBookings = [], onConfirm }) {
+export default function CreateBookingModal({ isOpen, onClose, slot, existingBooking, tableBookings = [], onConfirm, globalConfig }) {
   const [step, setStep] = useState('form');
   const [error, setError] = useState('');
+
+  // Parse Config
+  const openHour = globalConfig?.venueStartTime ? parseInt(globalConfig.venueStartTime.split(':')[0], 10) : 10;
+  const HOURLY_RATE = globalConfig?.hourlyRate ? Number(globalConfig.hourlyRate) : 15.0;
 
   const [form, setForm] = useState({
     checkIn: '',
@@ -56,7 +58,7 @@ export default function CreateBookingModal({ isOpen, onClose, slot, existingBook
       });
       setStep('form');
     }
-  }, [isOpen, slot, existingBooking]);
+  }, [isOpen, slot, existingBooking, HOURLY_RATE]);
 
   const getBaseMs = () => existingBooking ? existingBooking.startTime : slot?.startTimestamp;
 
@@ -70,12 +72,12 @@ export default function CreateBookingModal({ isOpen, onClose, slot, existingBook
   const parseTimeFromInput = (timeStr, baseMs) => {
     if (!timeStr) return 0;
     const [hh, mm] = timeStr.split(':').map(Number);
-    const startOfDay = new Date(getTimelineStartOfDay(baseMs));
+    const startOfDay = new Date(getTimelineStartOfDay(baseMs, openHour));
 
     const d = new Date(startOfDay);
     d.setHours(hh, mm, 0, 0);
 
-    if (hh < TIMELINE_CONFIG.OPEN_HOUR) {
+    if (hh < openHour) {
       d.setDate(d.getDate() + 1);
     }
     return d.getTime();
