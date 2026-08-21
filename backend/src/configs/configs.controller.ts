@@ -17,9 +17,8 @@ class UpdateConfigDto {
   hourlyRate?: number;
 
   @IsOptional()
-  @IsNumber()
-  @Min(1)
-  workingHoursPerDay?: number;
+  @IsString()
+  venueCloseTime?: string;
 
   @IsOptional()
   @IsString()

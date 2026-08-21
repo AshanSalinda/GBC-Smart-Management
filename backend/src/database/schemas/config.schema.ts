@@ -22,8 +22,8 @@ export class Config {
   @Prop({ type: Number, required: true, default: 1500 })
   hourlyRate: number;
 
-  @Prop({ type: Number, required: true, default: 16 })
-  workingHoursPerDay: number;
+  @Prop({ type: String, required: true, default: '00:00' })
+  venueCloseTime: string;
 
   @Prop({ type: String, required: true, default: '09:00' })
   venueStartTime: string;

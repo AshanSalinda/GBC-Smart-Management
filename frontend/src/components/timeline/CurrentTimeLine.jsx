@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { timeToPixels } from './timelineUtils';
 
-export default function CurrentTimeLine({ scrollContainerRef, currentTime }) {
+export default function CurrentTimeLine({ scrollContainerRef, currentTime, openHour }) {
   const [shouldRender, setShouldRender] = useState(true);
 
-  const leftOffset = timeToPixels(currentTime);
+  const leftOffset = timeToPixels(currentTime, openHour);
 
   useEffect(() => {
     // If outside operating hours, don't show the line

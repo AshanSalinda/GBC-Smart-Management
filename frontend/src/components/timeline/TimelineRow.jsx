@@ -3,11 +3,11 @@ import FreeSlotButton from './FreeSlotButton';
 import { TIMELINE_CONFIG, getTimelineStartOfDay } from './timelineUtils';
 
 // Helper to calculate free slots between bookings
-function calculateFreeSlots(bookings, closeHour, currentTime) {
+function calculateFreeSlots(bookings, closeHour, currentTime, openHour) {
   const freeSlots = [];
   
-  const openTimeMs = getTimelineStartOfDay();
-  const closeTimeMs = openTimeMs + ((closeHour - TIMELINE_CONFIG.OPEN_HOUR) * 3600000);
+  const openTimeMs = getTimelineStartOfDay(new Date(), openHour);
+  const closeTimeMs = openTimeMs + ((closeHour - openHour) * 3600000);
 
   let currentCursor = openTimeMs;
   const now = currentTime;
@@ -49,14 +49,14 @@ function calculateFreeSlots(bookings, closeHour, currentTime) {
   return freeSlots;
 }
 
-export default function TimelineRow({ table, width, bookings = [], isLast, closeHour, currentTime, onSlotClick, onEditBooking }) {
-  const freeSlots = calculateFreeSlots(bookings, closeHour, currentTime);
+export default function TimelineRow({ table, width, bookings = [], isLast, closeHour, currentTime, onSlotClick, onEditBooking, openHour }) {
+  const freeSlots = calculateFreeSlots(bookings, closeHour, currentTime, openHour);
 
   return (
     <div className={`relative h-[92px] flex items-center ${isLast ? '' : 'border-b border-[#2a2a2e]'}`} style={{ width: `${width}px` }}>
       {/* Existing Bookings */}
       {bookings.map((b) => (
-        <BookingBlock key={b.id} booking={b} onEditBooking={onEditBooking} />
+        <BookingBlock key={b.id} booking={b} onEditBooking={onEditBooking} openHour={openHour} />
       ))}
 
       {/* Free Slots */}
@@ -66,6 +66,7 @@ export default function TimelineRow({ table, width, bookings = [], isLast, close
           startTimestamp={slot.startTimestamp} 
           durationMs={slot.durationMs} 
           onClick={() => onSlotClick?.({ tableId: table.tableId || table.id, startTimestamp: slot.startTimestamp, durationMs: slot.durationMs })}
+          openHour={openHour}
         />
       ))}
     </div>

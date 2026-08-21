@@ -1,21 +1,58 @@
 import { useState } from 'react';
 import Modal from '../ui/Modal';
 import { timeToPixels, durationToPixels } from './timelineUtils';
+import { updateBooking, cancelBooking } from '../../api/bookings';
 
 const formatTime = (ms) => {
   if (!ms) return '--:--';
   return new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 };
 
-export default function BookingBlock({ booking, onEditBooking }) {
+export default function BookingBlock({ booking, onEditBooking, openHour }) {
   const [showModal, setShowModal] = useState(false);
-  const left = timeToPixels(booking.startTime);
+  const isPlaying = Date.now() >= booking.startTime && Date.now() <= (booking.startTime + booking.duration);
+  const isPast = Date.now() > (booking.startTime + booking.duration);
+
+  // Position and Width
+  const left = timeToPixels(booking.startTime, openHour);
   const width = durationToPixels(booking.duration);
   const isPaid = booking.paid;
 
   const startTimeStr = formatTime(booking.startTime);
   const endTimeStr = formatTime(booking.startTime + booking.duration);
   const durationHrs = (booking.duration / 3600000).toFixed(1).replace('.0', '');
+
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleTogglePaid = async (e) => {
+    e.stopPropagation();
+    if (isUpdating) return;
+    try {
+      setIsUpdating(true);
+      await updateBooking(booking.id, {
+        paid: !isPaid
+      });
+      // Assuming parent re-fetches or socket updates the state, otherwise we might need to rely on that.
+    } catch (err) {
+      console.error('Failed to toggle paid status', err);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleCancelBooking = async (e) => {
+    e.stopPropagation();
+    if (isUpdating || booking.startTime < Date.now()) return;
+    try {
+      setIsUpdating(true);
+      await cancelBooking(booking.id);
+      setShowModal(false);
+    } catch (err) {
+      console.error('Failed to cancel booking', err);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   return (
     <>
@@ -86,10 +123,10 @@ export default function BookingBlock({ booking, onEditBooking }) {
           {/* Edit Booking */}
           <button
             className="flex items-center justify-center py-4 bg-white/5 hover:bg-white/10 active:bg-white/15 active:scale-[0.95] text-white rounded-[1rem] transition-all select-none"
-            onClick={e => { 
-              e.stopPropagation(); 
+            onClick={e => {
+              e.stopPropagation();
               setShowModal(false);
-              onEditBooking?.(booking); 
+              onEditBooking?.(booking);
             }}
             title="Update Info"
           >
@@ -100,8 +137,9 @@ export default function BookingBlock({ booking, onEditBooking }) {
 
           {/* Toggle Paid/Unpaid */}
           <button
-            className={`flex items-center justify-center py-4 active:scale-[0.95] rounded-[1rem] transition-all select-none ${isPaid ? 'bg-warning/10 text-warning hover:bg-warning/20 active:bg-warning/20' : 'bg-[#1a7a45]/20 text-[#8eecc0] hover:bg-[#1a7a45]/30 active:bg-[#1a7a45]/30'}`}
-            onClick={e => { e.stopPropagation(); /* TODO: Toggle Paid */ }}
+            className={`flex items-center justify-center py-4 active:scale-[0.95] rounded-[1rem] transition-all select-none ${isPaid ? 'bg-warning/10 text-warning hover:bg-warning/20 active:bg-warning/20' : 'bg-[#1a7a45]/20 text-[#8eecc0] hover:bg-[#1a7a45]/30 active:bg-[#1a7a45]/30'} ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={handleTogglePaid}
+            disabled={isUpdating}
             title={isPaid ? "Mark Unpaid" : "Mark Paid"}
           >
             {isPaid ? (
@@ -121,13 +159,9 @@ export default function BookingBlock({ booking, onEditBooking }) {
 
           {/* Cancel Booking */}
           <button
-            className={`flex items-center justify-center py-4 rounded-[1rem] transition-all select-none ${booking.startTime < Date.now() ? 'bg-white/5 text-white/20 cursor-not-allowed' : 'bg-danger/10 hover:bg-danger/20 active:bg-danger/20 active:scale-[0.95] text-danger'}`}
-            onClick={e => {
-              e.stopPropagation();
-              if (booking.startTime < Date.now()) return;
-              /* TODO: Cancel */
-            }}
-            disabled={booking.startTime < Date.now()}
+            className={`flex items-center justify-center py-4 rounded-[1rem] transition-all select-none ${booking.startTime < Date.now() ? 'bg-white/5 text-white/20 cursor-not-allowed' : 'bg-danger/10 hover:bg-danger/20 active:bg-danger/20 active:scale-[0.95] text-danger'} ${isUpdating ? 'opacity-50' : ''}`}
+            onClick={handleCancelBooking}
+            disabled={booking.startTime < Date.now() || isUpdating}
             title="Cancel Booking"
           >
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-8 h-8">
