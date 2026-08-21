@@ -3,9 +3,15 @@ import TimelineRow from './TimelineRow';
 import CurrentTimeLine from './CurrentTimeLine';
 import { getTimelineHeaders, getTotalTimelineWidth, TIMELINE_CONFIG, getDynamicCloseHour } from './timelineUtils';
 
-export default function BookingTimeline({ tables, bookings = [], onSlotClick, onEditBooking }) {
+export default function BookingTimeline({ tables, bookings = [], onSlotClick, onEditBooking, globalConfig }) {
   const scrollContainerRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(Date.now());
+
+  // Parse Config
+  const openHour = globalConfig?.venueStartTime ? parseInt(globalConfig.venueStartTime.split(':')[0], 10) : 10;
+  // If closeTime is 00:00, that's midnight, so 24.
+  const parsedCloseHour = globalConfig?.venueCloseTime ? parseInt(globalConfig.venueCloseTime.split(':')[0], 10) : 24;
+  const baseCloseHour = parsedCloseHour === 0 ? 24 : (parsedCloseHour < openHour ? parsedCloseHour + 24 : parsedCloseHour);
 
   // Central clock that ticks at the exact start of every minute, handling background tab throttling
   useEffect(() => {
@@ -45,13 +51,13 @@ export default function BookingTimeline({ tables, bookings = [], onSlotClick, on
 
   // Memoize these calculations so they only run when the bookings array changes
   const { closeHour, headers, totalWidth } = useMemo(() => {
-    const ch = getDynamicCloseHour(bookings);
+    const ch = getDynamicCloseHour(bookings, openHour, baseCloseHour);
     return {
       closeHour: ch,
-      headers: getTimelineHeaders(ch),
-      totalWidth: getTotalTimelineWidth(ch)
+      headers: getTimelineHeaders(openHour, ch),
+      totalWidth: getTotalTimelineWidth(openHour, ch)
     };
-  }, [bookings]);
+  }, [bookings, openHour, baseCloseHour]);
 
   return (
     <div className="border border-[#2a2a2e] rounded-[16px] overflow-hidden flex flex-col mt-4 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.55),0_4px_12px_-4px_rgba(0,0,0,0.35)]" style={{ background: 'linear-gradient(180deg, #1a1a1d 0%, #151517 100%)' }}>
@@ -126,7 +132,7 @@ export default function BookingTimeline({ tables, bookings = [], onSlotClick, on
               ))}
             </div>
 
-            <CurrentTimeLine scrollContainerRef={scrollContainerRef} currentTime={currentTime} />
+            <CurrentTimeLine scrollContainerRef={scrollContainerRef} currentTime={currentTime} openHour={openHour} />
 
             {tables.map((t, index) => (
               <TimelineRow
@@ -139,6 +145,7 @@ export default function BookingTimeline({ tables, bookings = [], onSlotClick, on
                 currentTime={currentTime}
                 onSlotClick={onSlotClick}
                 onEditBooking={onEditBooking}
+                openHour={openHour}
               />
             ))}
           </div>
