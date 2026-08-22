@@ -52,9 +52,10 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     this.client.on('connect', () => {
       this.logger.log('Connected to MQTT broker.');
 
-      // Subscribe to ACK and sync-request topics
+      // Subscribe to ACK and sync topics
       this.client.subscribe('gbc/hardware/table/+/ack', { qos: 1 });
       this.client.subscribe('gbc/hardware/sync/request', { qos: 1 });
+      this.client.subscribe('gbc/hardware/sync/ack', { qos: 1 });
       this.client.subscribe('gbc/hardware/status', { qos: 1 });
 
       // Publish online status
@@ -136,6 +137,13 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       if (topic === 'gbc/hardware/sync/request') {
         this.logger.log(`[MQTT] ESP32 sync request from MAC: ${data.macAddress}`);
         this.publishFullStateSync();
+        return;
+      }
+
+      // ─── Hardware sync ACK ────────────────────────────────────
+      if (topic === 'gbc/hardware/sync/ack') {
+        this.logger.log(`[MQTT] Full state sync ACK received.`);
+        this.venueCacheService.confirmFullSync();
         return;
       }
 
