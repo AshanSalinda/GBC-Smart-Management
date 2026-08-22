@@ -100,18 +100,18 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     for (const payload of tables) {
       // Only publish to hardware if there is a pending transition
       if (payload.lightStatus === 'PENDING-ON' || payload.lightStatus === 'PENDING-OFF') {
-        const relayState = payload.lightStatus === 'PENDING-ON' ? 'ON' : 'OFF';
+        const lightState = payload.lightStatus === 'PENDING-ON' ? 'ON' : 'OFF';
 
         const commandPayload = {
           commandId: `cmd_${Date.now()}_${payload.tableId}`,
           tableId: payload.tableId,
-          relayState,
+          lightState,
           timestamp: new Date().toISOString(),
         };
 
         const topic = `gbc/hardware/table/${payload.tableId}/set`;
         this.client.publish(topic, JSON.stringify(commandPayload), { qos: 1 });
-        this.logger.log(`[MQTT] Published to ${topic}: relay ${relayState}`);
+        this.logger.log(`[MQTT] Published to ${topic}: lightState ${lightState}`);
       }
     }
   }
@@ -125,10 +125,10 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       // ─── ACK from ESP32 ───────────────────────────────────────
       if (topic.startsWith('gbc/hardware/table/') && topic.endsWith('/ack')) {
         this.logger.log(
-          `[MQTT] ACK received: Table ${data.tableId}, Relay ${data.relayState}, ` +
+          `[MQTT] ACK received: Table ${data.tableId}, lightState ${data.lightState}, ` +
           `Executed: ${data.executed}`,
         );
-        this.venueCacheService.confirmLightStatus(data.tableId, data.relayState);
+        this.venueCacheService.confirmLightStatus(data.tableId, data.lightState);
         return;
       }
 
@@ -155,14 +155,14 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
    */
   private publishFullStateSync(): void {
     const cache = this.venueCacheService.getCacheMap();
-    const relayStates = Object.values(cache).map((table) => ({
+    const tableStates = Object.values(cache).map((table) => ({
       tableId: table.tableId,
-      relayState: table.lightStatus === 'ON' || table.lightStatus === 'PENDING-ON' ? 'ON' : 'OFF',
+      lightState: table.lightStatus === 'ON' || table.lightStatus === 'PENDING-ON' ? 'ON' : 'OFF',
     }));
 
     const payload = {
       commandId: `sync_${Date.now()}`,
-      relays: relayStates,
+      tables: tableStates,
       timestamp: new Date().toISOString(),
     };
 
