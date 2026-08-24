@@ -60,7 +60,7 @@ export class VenueCacheService implements OnModuleInit {
         tableId: i,
         tableName: `Table 0${i}`,
         status: 'AVAILABLE',
-        lightStatus: 'OFF',
+        lightStatus: 'PENDING-OFF',
         currentBooking: null,
       };
     }
@@ -78,7 +78,7 @@ export class VenueCacheService implements OnModuleInit {
       const tid = booking.tableId;
       if (this.cache[tid]) {
         this.cache[tid].status = 'BUSY';
-        this.cache[tid].lightStatus = 'ON';
+        this.cache[tid].lightStatus = 'PENDING-ON';
         this.cache[tid].currentBooking = {
           bookingId: (booking as any)._id.toString(),
           bookerName: booking.bookerName,
@@ -167,6 +167,27 @@ export class VenueCacheService implements OnModuleInit {
     if (table.lightStatus !== relayState) {
       table.lightStatus = relayState;
       this.emitTableUpdate(table, source);
+    }
+  }
+
+  /**
+   * Called when ESP32 acknowledges a full state sync.
+   * Resolves all PENDING states across all tables.
+   */
+  confirmFullSync(source: string = 'hardware-sync-ack'): void {
+    let changed = false;
+    for (const table of Object.values(this.cache)) {
+      if (table.lightStatus === 'PENDING-ON') {
+        table.lightStatus = 'ON';
+        changed = true;
+      } else if (table.lightStatus === 'PENDING-OFF') {
+        table.lightStatus = 'OFF';
+        changed = true;
+      }
+    }
+    
+    if (changed) {
+      this.eventEmitter.emit(TABLES_UPDATED_EVENT, this.getAllTables());
     }
   }
 
