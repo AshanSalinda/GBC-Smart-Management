@@ -130,3 +130,6 @@ dist-ssr
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# ESP32 Secrets
+secrets.h

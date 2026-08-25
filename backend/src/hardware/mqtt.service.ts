@@ -17,6 +17,12 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MqttService.name);
   private client: mqtt.MqttClient;
 
+  // Track pending health requests by commandId
+  private pendingHealthRequests = new Map<
+    string,
+    { resolve: (data: any) => void; reject: (err: any) => void; timer: NodeJS.Timeout }
+  >();
+
   constructor(
     private readonly configService: ConfigService,
     private readonly venueCacheService: VenueCacheService,
@@ -52,10 +58,12 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     this.client.on('connect', () => {
       this.logger.log('Connected to MQTT broker.');
 
-      // Subscribe to ACK and sync-request topics
+      // Subscribe to ACK and sync topics
       this.client.subscribe('gbc/hardware/table/+/ack', { qos: 1 });
       this.client.subscribe('gbc/hardware/sync/request', { qos: 1 });
+      this.client.subscribe('gbc/hardware/sync/ack', { qos: 1 });
       this.client.subscribe('gbc/hardware/status', { qos: 1 });
+      this.client.subscribe('gbc/hardware/health/response', { qos: 1 });
 
       // Publish online status
       this.client.publish(
@@ -100,18 +108,18 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     for (const payload of tables) {
       // Only publish to hardware if there is a pending transition
       if (payload.lightStatus === 'PENDING-ON' || payload.lightStatus === 'PENDING-OFF') {
-        const relayState = payload.lightStatus === 'PENDING-ON' ? 'ON' : 'OFF';
+        const lightState = payload.lightStatus === 'PENDING-ON' ? 'ON' : 'OFF';
 
         const commandPayload = {
           commandId: `cmd_${Date.now()}_${payload.tableId}`,
           tableId: payload.tableId,
-          relayState,
+          lightState,
           timestamp: new Date().toISOString(),
         };
 
         const topic = `gbc/hardware/table/${payload.tableId}/set`;
         this.client.publish(topic, JSON.stringify(commandPayload), { qos: 1 });
-        this.logger.log(`[MQTT] Published to ${topic}: relay ${relayState}`);
+        this.logger.log(`[MQTT] Published to ${topic}: lightState ${lightState}`);
       }
     }
   }
@@ -125,10 +133,10 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       // ─── ACK from ESP32 ───────────────────────────────────────
       if (topic.startsWith('gbc/hardware/table/') && topic.endsWith('/ack')) {
         this.logger.log(
-          `[MQTT] ACK received: Table ${data.tableId}, Relay ${data.relayState}, ` +
+          `[MQTT] ACK received: Table ${data.tableId}, lightState ${data.lightState}, ` +
           `Executed: ${data.executed}`,
         );
-        this.venueCacheService.confirmLightStatus(data.tableId, data.relayState);
+        this.venueCacheService.confirmLightStatus(data.tableId, data.lightState);
         return;
       }
 
@@ -136,6 +144,26 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       if (topic === 'gbc/hardware/sync/request') {
         this.logger.log(`[MQTT] ESP32 sync request from MAC: ${data.macAddress}`);
         this.publishFullStateSync();
+        return;
+      }
+
+      // ─── Hardware sync ACK ────────────────────────────────────
+      if (topic === 'gbc/hardware/sync/ack') {
+        this.logger.log(`[MQTT] Full state sync ACK received.`);
+        this.venueCacheService.confirmFullSync();
+        return;
+      }
+
+      // ─── Hardware health response ───────────────────────────────
+      if (topic === 'gbc/hardware/health/response') {
+        this.logger.log(`[MQTT] Health response received from ESP32.`);
+        const cmdId = data.commandId;
+        if (cmdId && this.pendingHealthRequests.has(cmdId)) {
+          const request = this.pendingHealthRequests.get(cmdId)!;
+          clearTimeout(request.timer);
+          request.resolve(data);
+          this.pendingHealthRequests.delete(cmdId);
+        }
         return;
       }
 
@@ -149,20 +177,48 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /* ─── API Triggers ─────────────────────────────────────────── */
+
+  /**
+   * Requests a health check from the ESP32 and waits for the response.
+   * Resolves with the payload data, or rejects if it times out.
+   */
+  public async requestHardwareHealth(): Promise<any> {
+    if (!this.isConnected()) {
+      throw new Error('MQTT Broker is disconnected.');
+    }
+
+    const commandId = `health_${Date.now()}`;
+    const payload = JSON.stringify({ commandId });
+
+    return new Promise((resolve, reject) => {
+      // Set a 5-second timeout for the ESP32 to respond
+      const timer = setTimeout(() => {
+        this.pendingHealthRequests.delete(commandId);
+        reject(new Error('Hardware health request timed out. ESP32 may be offline.'));
+      }, 5000);
+
+      this.pendingHealthRequests.set(commandId, { resolve, reject, timer });
+
+      this.client.publish('gbc/hardware/health/request', payload, { qos: 1 });
+      this.logger.log(`[MQTT] Published health request to ESP32: ${commandId}`);
+    });
+  }
+
   /**
    * Publishes the full in-memory light state for all 4 tables
    * to the ESP32 sync response topic.
    */
   private publishFullStateSync(): void {
     const cache = this.venueCacheService.getCacheMap();
-    const relayStates = Object.values(cache).map((table) => ({
+    const tableStates = Object.values(cache).map((table) => ({
       tableId: table.tableId,
-      relayState: table.lightStatus === 'ON' || table.lightStatus === 'PENDING-ON' ? 'ON' : 'OFF',
+      lightState: table.lightStatus === 'ON' || table.lightStatus === 'PENDING-ON' ? 'ON' : 'OFF',
     }));
 
     const payload = {
       commandId: `sync_${Date.now()}`,
-      relays: relayStates,
+      tables: tableStates,
       timestamp: new Date().toISOString(),
     };
 
