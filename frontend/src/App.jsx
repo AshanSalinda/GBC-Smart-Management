@@ -17,6 +17,7 @@ const Bookings = React.lazy(() => import('./pages/Bookings'));
 const TvDisplay = React.lazy(() => import('./pages/TvDisplay'));
 const Illumination = React.lazy(() => import('./pages/Illumination'));
 const Admin = React.lazy(() => import('./pages/Admin'));
+const HardwareStatus = React.lazy(() => import('./pages/HardwareStatus'));
 
 export default function App() {
   return (
@@ -75,6 +76,14 @@ export default function App() {
                 element={
                   <ProtectedRoute allowedRoles={['admin']}>
                     <Admin />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/health"
+                element={
+                  <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                    <HardwareStatus />
                   </ProtectedRoute>
                 }
               />

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CalendarDays, Lightbulb, Users, TvMinimal, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Lightbulb, Users, TvMinimal, PanelLeftClose, PanelLeftOpen, Cpu } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useState } from 'react';
 
@@ -13,6 +13,7 @@ export default function Navigation() {
     { name: 'Bookings', path: '/bookings', icon: CalendarDays },
     { name: 'Illumination', path: '/illumination', icon: Lightbulb },
     { name: 'TV Display', path: '/tv-display', icon: TvMinimal },
+    { name: 'Hardware', path: '/health', icon: Cpu },
     ...(isAdmin ? [{ name: 'Admin', path: '/admin', icon: Users }] : []),
   ];
 
