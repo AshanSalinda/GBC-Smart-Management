@@ -3,6 +3,7 @@ import {
   Activity, Server, Thermometer, Wifi, HardDrive,
   RefreshCcw, AlertTriangle, CheckCircle2, ShieldAlert
 } from 'lucide-react';
+import { hardwareApi } from '../api/hardware';
 
 export default function HardwareStatus() {
   const [healthData, setHealthData] = useState(null);
@@ -13,18 +14,7 @@ export default function HardwareStatus() {
     setLoading(true);
     setError(null);
     try {
-      const token = await window.electronAPI?.invoke('auth:getIdToken') || localStorage.getItem('token');
-      const response = await fetch('/api/hardware/health', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await hardwareApi.getHealth();
       setHealthData(data);
     } catch (err) {
       console.error('Error fetching hardware health:', err);
