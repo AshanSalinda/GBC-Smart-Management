@@ -17,6 +17,12 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MqttService.name);
   private client: mqtt.MqttClient;
 
+  // Track pending health requests by commandId
+  private pendingHealthRequests = new Map<
+    string,
+    { resolve: (data: any) => void; reject: (err: any) => void; timer: NodeJS.Timeout }
+  >();
+
   constructor(
     private readonly configService: ConfigService,
     private readonly venueCacheService: VenueCacheService,
@@ -57,6 +63,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       this.client.subscribe('gbc/hardware/sync/request', { qos: 1 });
       this.client.subscribe('gbc/hardware/sync/ack', { qos: 1 });
       this.client.subscribe('gbc/hardware/status', { qos: 1 });
+      this.client.subscribe('gbc/hardware/health/response', { qos: 1 });
 
       // Publish online status
       this.client.publish(
@@ -147,6 +154,19 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
+      // ─── Hardware health response ───────────────────────────────
+      if (topic === 'gbc/hardware/health/response') {
+        this.logger.log(`[MQTT] Health response received from ESP32.`);
+        const cmdId = data.commandId;
+        if (cmdId && this.pendingHealthRequests.has(cmdId)) {
+          const request = this.pendingHealthRequests.get(cmdId)!;
+          clearTimeout(request.timer);
+          request.resolve(data);
+          this.pendingHealthRequests.delete(cmdId);
+        }
+        return;
+      }
+
       // ─── Hardware status (LWT) ────────────────────────────────
       if (topic === 'gbc/hardware/status') {
         this.logger.warn(`[MQTT] Hardware status: ${data.status}`);
@@ -155,6 +175,34 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     } catch (err: any) {
       this.logger.error(`Failed to parse MQTT message on ${topic}: ${err.message}`);
     }
+  }
+
+  /* ─── API Triggers ─────────────────────────────────────────── */
+
+  /**
+   * Requests a health check from the ESP32 and waits for the response.
+   * Resolves with the payload data, or rejects if it times out.
+   */
+  public async requestHardwareHealth(): Promise<any> {
+    if (!this.isConnected()) {
+      throw new Error('MQTT Broker is disconnected.');
+    }
+
+    const commandId = `health_${Date.now()}`;
+    const payload = JSON.stringify({ commandId });
+
+    return new Promise((resolve, reject) => {
+      // Set a 5-second timeout for the ESP32 to respond
+      const timer = setTimeout(() => {
+        this.pendingHealthRequests.delete(commandId);
+        reject(new Error('Hardware health request timed out. ESP32 may be offline.'));
+      }, 5000);
+
+      this.pendingHealthRequests.set(commandId, { resolve, reject, timer });
+
+      this.client.publish('gbc/hardware/health/request', payload, { qos: 1 });
+      this.logger.log(`[MQTT] Published health request to ESP32: ${commandId}`);
+    });
   }
 
   /**
