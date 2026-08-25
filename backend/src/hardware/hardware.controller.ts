@@ -4,7 +4,7 @@ import { VenueCacheService } from '../state/venue-cache.service';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 
-@Controller('hardware')
+@Controller('api/hardware')
 export class HardwareController {
   private readonly logger = new Logger(HardwareController.name);
 
