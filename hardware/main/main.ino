@@ -160,6 +160,13 @@ namespace Hardware {
       if (networkIndicatorState) setNetworkIndicator(false); // Turn OFF if both connected
     }
   }
+
+  bool isTableOn(int id) {
+    if (id >= 1 && id <= 4) {
+      return digitalRead(tables[id - 1].gpioPin) == HIGH;
+    }
+    return false;
+  }
 }
 
 // ==========================================
@@ -230,6 +237,7 @@ namespace Cloud {
   void publishOnlineStatus();
   void requestSync();
   void acknowledgeSync(const char* commandId);
+  void publishHealthStatus(const char* commandId);
 
   bool isConnected() {
     return isMqttConnected;
@@ -258,6 +266,7 @@ namespace Cloud {
         isMqttConnected = true;
         esp_mqtt_client_subscribe(client, "gbc/hardware/sync/response", 1);
         esp_mqtt_client_subscribe(client, "gbc/hardware/table/+/set", 1);
+        esp_mqtt_client_subscribe(client, "gbc/hardware/health/request", 1);
         publishOnlineStatus();
         requestSync();
         break;
@@ -274,6 +283,9 @@ namespace Cloud {
         const char syncTopic[] = "gbc/hardware/sync/response";
         const int syncTopicLen = sizeof(syncTopic) - 1; // -1 to ignore the null terminator
         
+        const char healthTopic[] = "gbc/hardware/health/request";
+        const int healthTopicLen = sizeof(healthTopic) - 1;
+
         char setPrefix[] = "gbc/hardware/table/";
         const int setPrefixLen = sizeof(setPrefix) - 1;
 
@@ -285,6 +297,10 @@ namespace Cloud {
           }
           const char* cmdId = doc["commandId"];
           acknowledgeSync(cmdId ? cmdId : "");
+        }
+        else if (event->topic_len == healthTopicLen && strncmp(event->topic, healthTopic, healthTopicLen) == 0) {
+          const char* cmdId = doc["commandId"];
+          publishHealthStatus(cmdId ? cmdId : "");
         }
         else if (event->topic_len > setPrefixLen && strncmp(event->topic, setPrefix, setPrefixLen) == 0) {
           int tId = doc["tableId"].as<int>();
@@ -359,6 +375,29 @@ namespace Cloud {
     char payload[128];
     serializeJson(doc, payload);
     esp_mqtt_client_publish(client, "gbc/hardware/sync/ack", payload, 0, 1, 0);
+  }
+
+  void publishHealthStatus(const char* commandId) {
+    JsonDocument doc;
+    doc["commandId"] = commandId;
+    doc["deviceName"] = DEVICE_NAME;
+    doc["mac"] = WiFi.macAddress();
+    doc["uptime"] = millis();
+    doc["freeHeap"] = ESP.getFreeHeap();
+    doc["heapSize"] = ESP.getHeapSize();
+    doc["temperature"] = temperatureRead();
+    doc["ssid"] = WiFi.SSID();
+    doc["rssi"] = WiFi.RSSI();
+    doc["ipAddress"] = WiFi.localIP().toString();
+
+    JsonObject tablesState = doc["tables"].to<JsonObject>();
+    for (int i = 1; i <= 4; i++) {
+      tablesState[String(i)] = Hardware::isTableOn(i) ? "ON" : "OFF";
+    }
+
+    char payload[512];
+    serializeJson(doc, payload);
+    esp_mqtt_client_publish(client, "gbc/hardware/health/response", payload, 0, 1, 0);
   }
 }
 
