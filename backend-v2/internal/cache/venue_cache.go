@@ -17,6 +17,7 @@ type VenueCache struct {
 	mu            sync.RWMutex
 	tables        map[int]domain.TableState
 	broadcastChan chan<- []domain.TableState
+	logger        *slog.Logger
 }
 
 // New initialises the cache with all 4 tables in AVAILABLE/PENDING-OFF state.
@@ -24,6 +25,7 @@ func New(broadcastChan chan<- []domain.TableState) *VenueCache {
 	c := &VenueCache{
 		tables:        make(map[int]domain.TableState, 4),
 		broadcastChan: broadcastChan,
+		logger:        slog.Default().With("module", "CACH"),
 	}
 	for i := 1; i <= 4; i++ {
 		c.tables[i] = domain.TableState{
@@ -87,7 +89,7 @@ func (c *VenueCache) ActivateTable(tableID int, booking domain.CurrentBooking) {
 	t.CurrentBooking = &booking
 	c.tables[tableID] = t
 	c.mu.Unlock()
-	slog.Info("Cache: table activated", "tableId", tableID, "booking", booking.BookingID)
+	c.logger.Info("table activated", "tableId", tableID, "booking", booking.BookingID)
 	c.broadcast()
 }
 
@@ -100,7 +102,7 @@ func (c *VenueCache) DeactivateTable(tableID int) {
 	t.CurrentBooking = nil
 	c.tables[tableID] = t
 	c.mu.Unlock()
-	slog.Info("Cache: table deactivated", "tableId", tableID)
+	c.logger.Info("table deactivated", "tableId", tableID)
 	c.broadcast()
 }
 
@@ -115,7 +117,7 @@ func (c *VenueCache) SetLightStatus(tableID int, targetState domain.LightStatus)
 	}
 	c.tables[tableID] = t
 	c.mu.Unlock()
-	slog.Info("Cache: light status set", "tableId", tableID, "target", targetState)
+	c.logger.Info("light status set", "tableId", tableID, "target", targetState)
 	c.broadcast()
 }
 
@@ -130,7 +132,7 @@ func (c *VenueCache) ConfirmLightStatus(tableID int, state domain.LightStatus) {
 	}
 	c.mu.Unlock()
 	if changed {
-		slog.Info("Cache: light confirmed", "tableId", tableID, "state", state)
+		c.logger.Info("light confirmed", "tableId", tableID, "state", state)
 		c.broadcast()
 	}
 }
@@ -152,7 +154,7 @@ func (c *VenueCache) ConfirmFullSync() {
 	}
 	c.mu.Unlock()
 	if changed {
-		slog.Info("Cache: full sync confirmed")
+		c.logger.Info("full sync confirmed")
 		c.broadcast()
 	}
 }
@@ -180,6 +182,6 @@ func (c *VenueCache) broadcast() {
 	select {
 	case c.broadcastChan <- snapshot:
 	default:
-		slog.Warn("Cache: broadcast channel full — snapshot dropped")
+		c.logger.Warn("broadcast channel full — snapshot dropped")
 	}
 }
