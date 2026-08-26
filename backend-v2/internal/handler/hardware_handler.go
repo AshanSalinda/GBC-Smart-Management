@@ -40,6 +40,18 @@ func (h *HardwareHandler) Health(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "ONLINE", "metadata": data})
 	}
 
+	metadata := fiber.Map{
+		"deviceName":   hwData["deviceName"],
+		"macAddress":   hwData["mac"],
+		"uptimeMillis": hwData["uptime"],
+		"freeHeap":     hwData["freeHeap"],
+		"heapSize":     hwData["heapSize"],
+		"temperature":  hwData["temperature"],
+		"ssid":         hwData["ssid"],
+		"rssi":         hwData["rssi"],
+		"ipAddress":    hwData["ipAddress"],
+	}
+
 	// Reconcile ESP32-reported relay states against the backend cache.
 	// The ESP32 health response has "tables": { "1": "ON", "2": "OFF", ... }
 	hwTables, _ := hwData["tables"].(map[string]any)
@@ -67,7 +79,7 @@ func (h *HardwareHandler) Health(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"status":   "ONLINE",
-		"metadata": hwData,
+		"metadata": metadata,
 		"tables":   tableReconcile,
 	})
 }

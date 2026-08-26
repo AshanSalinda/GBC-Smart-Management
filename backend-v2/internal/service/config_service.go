@@ -26,7 +26,7 @@ func (s *ConfigService) GetConfig() (*domain.VenueConfig, error) {
 
 func (s *ConfigService) UpdateConfig(updates map[string]any) (*domain.VenueConfig, error) {
 	// Validate allowed fields
-	allowed := map[string]bool{"hourlyRate": true, "workingHoursPerDay": true, "venueStartTime": true}
+	allowed := map[string]bool{"hourlyRate": true, "venueCloseTime": true, "venueStartTime": true}
 	for k := range updates {
 		if !allowed[k] {
 			return nil, &ValidationError{Code: 400, Message: fmt.Sprintf("unknown config field: %s", k)}
