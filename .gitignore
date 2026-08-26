@@ -138,3 +138,15 @@ Thumbs.db
 
 # ESP32 Secrets
 secrets.h
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
+server.exe
