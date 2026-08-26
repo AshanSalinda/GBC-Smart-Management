@@ -35,7 +35,7 @@ const PlusIcon = () => (
 const tablePropsAreEqual = (prevProps, nextProps) => {
   const prev = prevProps.table;
   const next = nextProps.table;
-  
+
   return (
     prev.status === next.status &&
     prev.currentBooking?.id === next.currentBooking?.id &&
@@ -48,12 +48,12 @@ const TableSummaryCard = React.memo(({ table }) => {
   const isBusy = table.status === 'BUSY';
   const tableId = table.tableId;
   const tableName = table.tableName || `Table 0${tableId}`;
-  
+
   const player = table.currentBooking?.bookerName || 'Walk-in';
   const mobile = table.currentBooking?.bookerMobile || '';
   const isPaid = table.currentBooking?.isPaid;
   const amount = table.currentBooking?.amount || 0;
-  
+
   const startTime = table.currentBooking?.checkInTime ? new Date(table.currentBooking.checkInTime).getTime() : null;
   const endTime = table.currentBooking?.checkOutTime ? new Date(table.currentBooking.checkOutTime).getTime() : null;
 
@@ -148,7 +148,7 @@ export default function Bookings() {
   const rawTimeline = useStore(state => state.timeline) || [];
   const globalConfig = useStore(state => state.globalConfig);
   const setGlobalConfig = useStore(state => state.setGlobalConfig);
-  
+
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [editingBooking, setEditingBooking] = useState(null);
   const [showTimeline, setShowTimeline] = useState(false);
@@ -212,16 +212,29 @@ export default function Bookings() {
     }
   };
 
+  const totalTables = tables.length || 4;
+  const freeTablesCount = tables.length > 0 ? tables.filter(t => t.status !== 'BUSY').length : 0;
+
   return (
     <div className="max-w-[1600px] mx-auto min-h-screen">
-      <div className="mb-10 flex items-center justify-between">
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/5">
         <div>
-          <h1 className="text-4xl md:text-5xl font-display font-black tracking-tight text-white mb-2 drop-shadow-sm">
-            Bookings
-          </h1>
-          <p className="text-text-dim text-sm md:text-base font-medium tracking-wide">
-            Manage tables and active sessions
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-4xl font-semibold tracking-tight text-white">
+              Bookings
+            </h1>
+          </div>
+          <p className="text-text-dim text-sm">
+            Manage table reservations and active sessions.
           </p>
+        </div>
+
+        <div className={`flex w-fit min-w-24 items-center justify-center shrink-0 gap-1.5 px-3 py-1.5 ml-auto rounded-full border ${tables.length === 0 ? 'bg-white/10 border-white/15 text-white/50' : freeTablesCount > 0 ? 'bg-accent/10 border-accent/15 text-accent' : 'bg-warning/10 border-warning/15 text-warning'
+          }`}>
+          <div className={`w-1.5 h-1.5 rounded-full ${tables.length === 0 ? 'bg-white/20 animate-pulse' : freeTablesCount > 0 ? 'bg-accent' : 'bg-warning'}`} />
+          <span className="text-[11px] font-bold uppercase tracking-widest">
+            {tables.length === 0 ? 'Loading...' : `${freeTablesCount}/${totalTables} Free`}
+          </span>
         </div>
       </div>
 
@@ -239,7 +252,7 @@ export default function Bookings() {
       {/* Interactive Booking Timeline */}
       {showTimeline ? (
         <BookingTimeline
-          tables={tables.length > 0 ? tables : [{tableId: 1}, {tableId: 2}, {tableId: 3}, {tableId: 4}]} // Fallback for timeline layout structure mapping
+          tables={tables.length > 0 ? tables : [{ tableId: 1 }, { tableId: 2 }, { tableId: 3 }, { tableId: 4 }]} // Fallback for timeline layout structure mapping
           bookings={timelineBookings}
           onSlotClick={setSelectedSlot}
           onEditBooking={setEditingBooking}
