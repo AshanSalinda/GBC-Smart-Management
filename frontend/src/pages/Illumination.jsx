@@ -166,7 +166,7 @@ export default function Illumination() {
   const isAllOff = tables.length > 0 && tables.every(t => t.lightStatus === 'OFF' || t.lightStatus === 'PENDING-OFF');
 
   return (
-    <div className="max-w-[1600px] mx-auto min-h-screen animate-in fade-in duration-300">
+    <div className="max-w-[1600px] mx-auto animate-in fade-in duration-300">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
         <div>
           <h1 className="text-4xl md:text-5xl font-display font-black tracking-tight text-white mb-2 drop-shadow-sm">
@@ -216,7 +216,7 @@ export default function Illumination() {
       </div>
 
       {/* Grid - Database Key Anchoring Applied Here */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-4 gap-6 mb-12">
+      <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-4 gap-6">
         {tables.length > 0 ? (
           tables.map((table) => (
             <TableCard key={table.tableId} table={table} onToggle={toggleLight} />
