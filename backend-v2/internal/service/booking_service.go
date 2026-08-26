@@ -22,11 +22,12 @@ type BookingService struct {
 	configRepo   domain.ConfigRepository
 	tableSvc     *TableService
 	timelineChan chan<- []domain.Booking
+	logger       *slog.Logger
 
 	// Per-table mutexes: the check + write must be serialized per table.
 	// Different tables proceed independently.
-	mu     sync.Mutex          // guards the tableMutexes map itself
-	tblMu  map[int]*sync.Mutex // one mutex per tableID
+	mu    sync.Mutex          // guards the tableMutexes map itself
+	tblMu map[int]*sync.Mutex // one mutex per tableID
 }
 
 // NewBookingService creates a new BookingService.
@@ -45,6 +46,7 @@ func NewBookingService(
 		configRepo:   configRepo,
 		tableSvc:     tableSvc,
 		timelineChan: timelineChan,
+		logger:       slog.Default().With("module", "BOOK"),
 		tblMu:        tblMu,
 	}
 }
@@ -113,7 +115,7 @@ func (s *BookingService) CreateBooking(dto CreateBookingInput, createdBy, role s
 	if err := s.bookingRepo.Create(b); err != nil {
 		return nil, fmt.Errorf("create booking: %w", err)
 	}
-	slog.Info("Booking created", "id", b.ID, "tableId", dto.TableID)
+	s.logger.Info("Booking created", "id", b.ID, "tableId", dto.TableID)
 
 	// Sync cache if this booking is already live
 	syncNow := time.Now().UTC()
@@ -219,7 +221,7 @@ func (s *BookingService) UpdateBooking(id string, dto UpdateBookingInput) (*doma
 	if err := s.bookingRepo.Save(fresh); err != nil {
 		return nil, fmt.Errorf("save booking: %w", err)
 	}
-	slog.Info("Booking updated", "id", id)
+	s.logger.Info("Booking updated", "id", id)
 
 	// Sync cache if the booking is currently active
 	now := time.Now().UTC()
@@ -265,7 +267,7 @@ func (s *BookingService) CancelBooking(id string) (*domain.Booking, error) {
 	if err := s.bookingRepo.Save(fresh); err != nil {
 		return nil, fmt.Errorf("save cancelled booking: %w", err)
 	}
-	slog.Info("Booking cancelled", "id", id)
+	s.logger.Info("Booking cancelled", "id", id)
 
 	// Deactivate the table if this booking is currently active in the cache
 	now := time.Now().UTC()
@@ -286,13 +288,13 @@ func (s *BookingService) CancelBooking(id string) (*domain.Booking, error) {
 func (s *BookingService) emitTimelineUpdate() {
 	tl, err := s.GetTimeline(time.Now().UTC().Format("2006-01-02"))
 	if err != nil {
-		slog.Error("emitTimelineUpdate: failed to fetch timeline", "err", err)
+		s.logger.Error("failed to fetch timeline", "err", err)
 		return
 	}
 	select {
 	case s.timelineChan <- tl:
 	default:
-		slog.Warn("BookingService: timelineChan full, timeline update dropped")
+		s.logger.Warn("timelineChan full, timeline update dropped")
 	}
 }
 
