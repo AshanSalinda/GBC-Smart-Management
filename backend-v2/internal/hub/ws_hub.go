@@ -14,14 +14,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gofiber/websocket/v2"
 	"gbc/backend/internal/domain"
+
+	"github.com/gofiber/websocket/v2"
 )
 
 const (
-	writeWait  = 10 * time.Second
-	pongWait   = 60 * time.Second
-	pingPeriod = (pongWait * 9) / 10
+	writeWait   = 10 * time.Second
+	pongWait    = 60 * time.Second
+	pingPeriod  = (pongWait * 9) / 10
 	sendBufSize = 32
 )
 
@@ -168,13 +169,21 @@ func (h *Hub) sendInitialState(c *Client) {
 // ─── Broadcasting ─────────────────────────────────────────────────────────────
 
 func (h *Hub) broadcastToAll(tables []domain.TableState) {
-	data, err := json.Marshal(tables)
+	payload := map[string]any{
+		"event":  "TABLES_UPDATED",
+		"tables": tables,
+	}
+	data, err := json.Marshal(payload)
 	if err != nil {
 		return
 	}
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	for c := range h.clients {
+		// Only admin and staff receive timeline updates.
+		if c.info.Role != "admin" && c.info.Role != "staff" {
+			continue
+		}
 		select {
 		case c.send <- data:
 		case <-c.ctx.Done():
@@ -186,7 +195,11 @@ func (h *Hub) broadcastToAll(tables []domain.TableState) {
 }
 
 func (h *Hub) broadcastTimeline(tl []domain.Booking) {
-	data, err := json.Marshal(tl)
+	payload := map[string]any{
+		"event":    "TIMELINE_UPDATED",
+		"timeline": tl,
+	}
+	data, err := json.Marshal(payload)
 	if err != nil {
 		return
 	}
