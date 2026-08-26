@@ -33,16 +33,19 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('port') ?? 3000;
+  const nodeEnv = configService.get<string>('NODE_ENV');
 
   // ─── Swagger / OpenAPI Setup ─────────────────────────────────
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('GBC Smart Management API')
-    .setDescription('API documentation for the GBC Smart Management backend')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document);
+  if (nodeEnv === 'dev') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('GBC Smart Management API')
+      .setDescription('API documentation for the GBC Smart Management backend')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   await app.listen(port);
   logger.log(`🚀 GBC Backend running on http://localhost:${port}`);
