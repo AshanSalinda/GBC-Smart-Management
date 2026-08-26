@@ -40,6 +40,7 @@ func main() {
 
 	port := getEnv("PORT", "8000")
 	mongoURI := mustGetEnv("MONGODB_URI")
+	dbName := getEnv("DB_NAME", "gbc")
 	firebaseSAJSON := mustGetEnv("FIREBASE_SERVICE_ACCOUNT")
 	mqttURL := mustGetEnv("MQTT_URL")
 	mqttUser := mustGetEnv("MQTT_USERNAME")
@@ -69,7 +70,7 @@ func main() {
 	pingCancel()
 	slog.Info("MongoDB connected")
 
-	db := mongoClient.Database("gbc")
+	db := mongoClient.Database(dbName)
 
 	// ─── 3. Init Firebase Admin ───────────────────────────────────
 	firebaseApp, err := firebase.NewApp(
