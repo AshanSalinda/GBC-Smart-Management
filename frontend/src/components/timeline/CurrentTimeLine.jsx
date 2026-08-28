@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { timeToPixels } from './timelineUtils';
+import { timeToPixelsFromOpenTime } from './timelineUtils';
 
-export default function CurrentTimeLine({ scrollContainerRef, currentTime, openHour }) {
+export default function CurrentTimeLine({ scrollContainerRef, currentTime, openTimeMs }) {
   const [shouldRender, setShouldRender] = useState(true);
 
-  const leftOffset = timeToPixels(currentTime, openHour);
+  const leftOffset = timeToPixelsFromOpenTime(currentTime, openTimeMs);
 
   useEffect(() => {
     // If outside operating hours, don't show the line
@@ -30,14 +30,14 @@ export default function CurrentTimeLine({ scrollContainerRef, currentTime, openH
 
   if (!shouldRender) return null;
 
-  const formattedTime = new Date(currentTime).toLocaleTimeString('en-US', { 
-    hour: 'numeric', 
+  const formattedTime = new Date(currentTime).toLocaleTimeString('en-US', {
+    hour: 'numeric',
     minute: '2-digit',
-    hour12: true 
+    hour12: true
   });
 
   return (
-    <div 
+    <div
       className="absolute top-0 bottom-0 z-40 pointer-events-none w-0"
       style={{ left: `${leftOffset}px` }}
     >
