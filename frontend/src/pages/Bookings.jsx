@@ -261,7 +261,7 @@ export default function Bookings() {
       ) : (
         <div className="h-[400px] w-full rounded-[16px] border border-[#2a2a2e] flex flex-col items-center justify-center bg-[#151517] shadow-xl mt-4 animate-pulse">
           <div className="w-8 h-8 border-4 border-[#3a3a40] border-t-accent rounded-full animate-spin mb-4" />
-          <p className="text-text-dim text-sm font-medium">Loading Timeline...</p>
+          <p className="text-text-dim text-sm font-medium">Loading Schedule...</p>
         </div>
       )}
 
