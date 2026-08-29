@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Modal from '../ui/Modal';
-import { getTimelineStartOfDay } from './timelineUtils';
+import { TIMELINE_CONFIG, getTimelineStartOfDay } from './timelineUtils';
 
 const inputBase = "w-full bg-[#121214] border border-[#2a2a2e] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent focus:shadow-[0_0_15px_rgba(74,188,109,0.15)] transition-all font-medium placeholder-white/20";
 const labelBase = "block text-text-dim text-[0.7rem] uppercase font-bold tracking-wider mb-2 ml-1";
@@ -44,19 +44,16 @@ export default function CreateBookingModal({ isOpen, onClose, slot, existingBook
       setStep('form');
     } else if (slot) {
       const startMs = slot.startTimestamp;
-      // Default to 1 hour, or the remaining slot duration if less than 1 hour
-      const durationMs = Math.min(60 * 60000, slot.durationMs);
+      const durationMs = 60 * 60000;
       const endMs = startMs + durationMs;
-
-      const durHours = durationMs / 3600000;
 
       setForm({
         checkIn: formatTimeForInput(startMs),
         checkOut: formatTimeForInput(endMs),
-        durationStr: durHours.toString(),
+        durationStr: '1',
         player: '',
         mobile: '',
-        amount: String(durHours * HOURLY_RATE),
+        amount: String(HOURLY_RATE),
         isPaid: false
       });
       setStep('form');
