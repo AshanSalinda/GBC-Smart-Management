@@ -1,10 +1,13 @@
 import BookingBlock from './BookingBlock';
 import FreeSlotButton from './FreeSlotButton';
-import { TIMELINE_CONFIG } from './timelineUtils';
+import { TIMELINE_CONFIG, getTimelineStartOfDay } from './timelineUtils';
 
 // Helper to calculate free slots between bookings
-function calculateFreeSlots(bookings, closeTimeMs, currentTime, openTimeMs) {
+function calculateFreeSlots(bookings, closeHour, currentTime, openHour) {
   const freeSlots = [];
+  
+  const openTimeMs = getTimelineStartOfDay(new Date(), openHour);
+  const closeTimeMs = openTimeMs + ((closeHour - openHour) * 3600000);
 
   let currentCursor = openTimeMs;
   const now = currentTime;
@@ -19,7 +22,7 @@ function calculateFreeSlots(bookings, closeTimeMs, currentTime, openTimeMs) {
     }
 
     const newDuration = slotEnd - slotStart;
-
+    
     // Only add if remaining duration is >= min slot time
     if (newDuration >= TIMELINE_CONFIG.MIN_SLOT_MINS * 60000) {
       freeSlots.push({ startTimestamp: slotStart, durationMs: newDuration });
@@ -46,24 +49,24 @@ function calculateFreeSlots(bookings, closeTimeMs, currentTime, openTimeMs) {
   return freeSlots;
 }
 
-export default function TimelineRow({ table, width, bookings = [], isLast, closeTimeMs, currentTime, onSlotClick, onEditBooking, openTimeMs }) {
-  const freeSlots = calculateFreeSlots(bookings, closeTimeMs, currentTime, openTimeMs);
+export default function TimelineRow({ table, width, bookings = [], isLast, closeHour, currentTime, onSlotClick, onEditBooking, openHour }) {
+  const freeSlots = calculateFreeSlots(bookings, closeHour, currentTime, openHour);
 
   return (
     <div className={`relative h-[92px] flex items-center ${isLast ? '' : 'border-b border-[#2a2a2e]'}`} style={{ width: `${width}px` }}>
       {/* Existing Bookings */}
       {bookings.map((b) => (
-        <BookingBlock key={b.id} booking={b} onEditBooking={onEditBooking} openTimeMs={openTimeMs} />
+        <BookingBlock key={b.id} booking={b} onEditBooking={onEditBooking} openHour={openHour} />
       ))}
 
       {/* Free Slots */}
       {freeSlots.map((slot, index) => (
-        <FreeSlotButton
-          key={`free-${index}`}
-          startTimestamp={slot.startTimestamp}
-          durationMs={slot.durationMs}
+        <FreeSlotButton 
+          key={`free-${index}`} 
+          startTimestamp={slot.startTimestamp} 
+          durationMs={slot.durationMs} 
           onClick={() => onSlotClick?.({ tableId: table.tableId || table.id, startTimestamp: slot.startTimestamp, durationMs: slot.durationMs })}
-          openTimeMs={openTimeMs}
+          openHour={openHour}
         />
       ))}
     </div>

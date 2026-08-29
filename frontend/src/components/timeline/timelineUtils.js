@@ -4,11 +4,10 @@ export const TIMELINE_CONFIG = {
 };
 
 // Calculate dynamic close hour based on bookings
-export const getDynamicCloseHour = (bookings = [], openHour = 10, defaultCloseHour = 24, openTimeMs) => {
+export const getDynamicCloseHour = (bookings = [], openHour = 10, defaultCloseHour = 24) => {
   let maxHour = defaultCloseHour;
   for (const b of bookings) {
-    const diffMs = b.startTime - openTimeMs;
-    const startMins = Math.floor(diffMs / 60000);
+    const startMins = getMinutesFromOpen(b.startTime, openHour);
     const endMins = startMins + (b.duration / 60000);
     const endHour = openHour + Math.ceil(endMins / 60);
     if (endHour > maxHour) {
@@ -18,7 +17,6 @@ export const getDynamicCloseHour = (bookings = [], openHour = 10, defaultCloseHo
   // Cap at 6 AM the next day
   return Math.min(maxHour, openHour + 20);
 };
-
 
 // Calculate total width in pixels
 export const getTotalTimelineWidth = (openHour = 10, closeHour = 24) => {
@@ -36,11 +34,18 @@ export function getTimelineStartOfDay(baseDate = new Date(), openHour = 10) {
   return d.getTime();
 }
 
-// High-performance version that avoids Date instantiation
-export function timeToPixelsFromOpenTime(timestamp, openTimeMs) {
+// Returns minutes from the start of the openHour for the given business day
+export function getMinutesFromOpen(timestamp, openHour = 10, baseDate = new Date()) {
   if (!timestamp) return 0;
+  const openTimeMs = getTimelineStartOfDay(baseDate, openHour);
   const diffMs = timestamp - openTimeMs;
-  return Math.floor(diffMs / 60000) * TIMELINE_CONFIG.PIXELS_PER_MINUTE;
+  return Math.floor(diffMs / 60000);
+}
+
+// Convert timestamp to Left Offset in pixels
+export function timeToPixels(timestamp, openHour = 10) {
+  const mins = getMinutesFromOpen(timestamp, openHour);
+  return mins * TIMELINE_CONFIG.PIXELS_PER_MINUTE;
 }
 
 // Convert duration in MS to width in pixels

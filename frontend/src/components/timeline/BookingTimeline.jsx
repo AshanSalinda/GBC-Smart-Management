@@ -1,9 +1,9 @@
 import { useRef, useMemo, useState, useEffect } from 'react';
 import TimelineRow from './TimelineRow';
 import CurrentTimeLine from './CurrentTimeLine';
-import { getTimelineHeaders, getTotalTimelineWidth, TIMELINE_CONFIG, getDynamicCloseHour, getTimelineStartOfDay } from './timelineUtils';
+import { getTimelineHeaders, getTotalTimelineWidth, TIMELINE_CONFIG, getDynamicCloseHour } from './timelineUtils';
 
-export default function BookingTimeline({ tables, bookings = [], onSlotClick, onEditBooking, globalConfig, selectedDate, onDateChange }) {
+export default function BookingTimeline({ tables, bookings = [], onSlotClick, onEditBooking, globalConfig }) {
   const scrollContainerRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(Date.now());
 
@@ -50,35 +50,25 @@ export default function BookingTimeline({ tables, bookings = [], onSlotClick, on
   }, []);
 
   // Memoize these calculations so they only run when the bookings array changes
-  const baseDateObj = useMemo(() => selectedDate ? new Date(selectedDate) : new Date(), [selectedDate]);
-  const openTimeMs = useMemo(() => getTimelineStartOfDay(baseDateObj, openHour), [baseDateObj, openHour]);
-
-  const { closeHour, headers, totalWidth, closeTimeMs } = useMemo(() => {
-    const ch = getDynamicCloseHour(bookings, openHour, baseCloseHour, openTimeMs);
+  const { closeHour, headers, totalWidth } = useMemo(() => {
+    const ch = getDynamicCloseHour(bookings, openHour, baseCloseHour);
     return {
       closeHour: ch,
       headers: getTimelineHeaders(openHour, ch),
-      totalWidth: getTotalTimelineWidth(openHour, ch),
-      closeTimeMs: openTimeMs + ((ch - openHour) * 3600000)
+      totalWidth: getTotalTimelineWidth(openHour, ch)
     };
-  }, [bookings, openHour, baseCloseHour, baseDateObj, openTimeMs]);
+  }, [bookings, openHour, baseCloseHour]);
 
   return (
     <div className="border border-[#2a2a2e] rounded-[16px] overflow-hidden flex flex-col mt-4 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.55),0_4px_12px_-4px_rgba(0,0,0,0.35)]" style={{ background: 'linear-gradient(180deg, #1a1a1d 0%, #151517 100%)' }}>
       {/* Top Header / Date Picker Area */}
       <div className="px-6 py-4 flex items-center justify-between border-b border-[#2a2a2e] bg-[rgba(22,22,24,0.95)] sticky top-0 z-10">
         <h2 className="text-[1.15rem] font-display font-bold text-white tracking-[-0.03em]">Schedule</h2>
-        <div className="flex items-center gap-3 bg-[#121214] px-[0.9rem] py-[0.55rem] rounded-[10px] border border-[#2a2a2e] focus-within:border-accent focus-within:ring-1 focus-within:ring-accent transition-all">
+        <div className="flex items-center gap-3 bg-[#121214] px-[0.9rem] py-[0.55rem] rounded-[10px] border border-[#2a2a2e]">
           <svg className="w-4 h-4 text-text-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <input
-            type="date"
-            className="bg-transparent text-[0.9rem] font-medium text-white outline-none cursor-pointer [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 hover:[&::-webkit-calendar-picker-indicator]:opacity-100"
-            value={selectedDate}
-            min={new Date().toISOString().split('T')[0]}
-            onChange={(e) => onDateChange(e.target.value)}
-          />
+          <span className="text-[0.9rem] font-medium text-white">Today</span>
         </div>
       </div>
 
@@ -133,7 +123,7 @@ export default function BookingTimeline({ tables, bookings = [], onSlotClick, on
           <div className="relative" style={{ width: `${totalWidth}px`, height: `${tables.length * 92}px` }}>
             {/* Unified Background Grid Lines (Every 30 mins) rendered ONCE for the entire grid */}
             <div className="absolute inset-0 pointer-events-none flex" style={{ width: `${totalWidth}px` }}>
-              {Array.from({ length: (closeHour - openHour) * 2 }).map((_, i) => (
+              {Array.from({ length: (closeHour - TIMELINE_CONFIG.OPEN_HOUR) * 2 }).map((_, i) => (
                 <div
                   key={i}
                   className={`h-full border-r border-[#2a2a2e] ${i % 2 === 0 ? 'opacity-40' : 'opacity-60'}`}
@@ -142,12 +132,7 @@ export default function BookingTimeline({ tables, bookings = [], onSlotClick, on
               ))}
             </div>
 
-            <CurrentTimeLine
-              scrollContainerRef={scrollContainerRef}
-              currentTime={currentTime}
-              openTimeMs={openTimeMs}
-              isToday={selectedDate === new Date().toISOString().split('T')[0]}
-            />
+            <CurrentTimeLine scrollContainerRef={scrollContainerRef} currentTime={currentTime} openHour={openHour} />
 
             {tables.map((t, index) => (
               <TimelineRow
@@ -156,11 +141,11 @@ export default function BookingTimeline({ tables, bookings = [], onSlotClick, on
                 width={totalWidth}
                 bookings={bookings.filter(b => b.tableId === (t.tableId || t.id))}
                 isLast={index === tables.length - 1}
-                closeTimeMs={closeTimeMs}
+                closeHour={closeHour}
                 currentTime={currentTime}
                 onSlotClick={onSlotClick}
                 onEditBooking={onEditBooking}
-                openTimeMs={openTimeMs}
+                openHour={openHour}
               />
             ))}
           </div>

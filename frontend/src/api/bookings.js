@@ -39,8 +39,3 @@ export const cancelBooking = async (bookingId) => {
   const response = await apiClient.delete(`/api/bookings/${bookingId}`);
   return response.data;
 };
-
-export const getTimelineByDate = async (dateStr) => {
-  const response = await apiClient.get(`/api/bookings/timeline?date=${dateStr}`);
-  return response.data;
-};
