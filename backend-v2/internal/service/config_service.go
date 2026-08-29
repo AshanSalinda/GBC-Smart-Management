@@ -9,11 +9,15 @@ import (
 
 // ConfigService manages the global venue configuration.
 type ConfigService struct {
-	repo domain.ConfigRepository
+	repo   domain.ConfigRepository
+	logger *slog.Logger
 }
 
 func NewConfigService(repo domain.ConfigRepository) *ConfigService {
-	return &ConfigService{repo: repo}
+	return &ConfigService{
+		repo:   repo,
+		logger: slog.Default().With("module", "CONF"),
+	}
 }
 
 func (s *ConfigService) GetConfig() (*domain.VenueConfig, error) {
@@ -36,6 +40,6 @@ func (s *ConfigService) UpdateConfig(updates map[string]any) (*domain.VenueConfi
 	if err != nil {
 		return nil, fmt.Errorf("update config: %w", err)
 	}
-	slog.Info("Config updated", "fields", fmt.Sprint(updates))
+	s.logger.Info("updated", "fields", fmt.Sprint(updates))
 	return cfg, nil
 }

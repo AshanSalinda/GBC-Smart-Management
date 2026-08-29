@@ -19,8 +19,8 @@ import (
 	"sync"
 	"time"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"gbc/backend/internal/domain"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
 // MqttClient manages the persistent connection to the MQTT broker.
@@ -28,6 +28,7 @@ type MqttClient struct {
 	client      mqtt.Client
 	coordinator domain.TableCoordinator
 	cmdChan     <-chan domain.MqttCommand
+	logger      *slog.Logger
 
 	// Pending health check requests keyed by commandId.
 	healthMu      sync.Mutex
@@ -40,9 +41,11 @@ func New(
 	coordinator domain.TableCoordinator,
 	cmdChan <-chan domain.MqttCommand,
 ) *MqttClient {
+	log := slog.Default().With("module", "MQTT")
 	c := &MqttClient{
 		coordinator:   coordinator,
 		cmdChan:       cmdChan,
+		logger:        log,
 		healthPending: make(map[string]chan any),
 	}
 
@@ -60,11 +63,11 @@ func New(
 		SetKeepAlive(30 * time.Second).
 		SetAutoReconnect(true).
 		SetReconnectingHandler(func(_ mqtt.Client, _ *mqtt.ClientOptions) {
-			slog.Warn("MQTT: reconnecting to broker...")
+			c.logger.Warn("reconnecting to broker...")
 		}).
 		SetOnConnectHandler(c.onConnect).
 		SetConnectionLostHandler(func(_ mqtt.Client, err error) {
-			slog.Error("MQTT: connection lost", "err", err)
+			c.logger.Error("connection lost", "err", err)
 		}).
 		SetWill("gbc/hardware/status", string(will), 1, false)
 
@@ -131,7 +134,7 @@ func (c *MqttClient) RequestHardwareHealth() (any, error) {
 
 	payload, _ := json.Marshal(map[string]string{"commandId": cmdID})
 	c.client.Publish("gbc/hardware/health/request", 1, false, payload)
-	slog.Info("MQTT: health request sent", "commandId", cmdID)
+	c.logger.Info("health request sent", "commandId", cmdID)
 
 	timer := time.NewTimer(5 * time.Second)
 	defer timer.Stop()
@@ -150,7 +153,7 @@ func (c *MqttClient) RequestHardwareHealth() (any, error) {
 // ─── Private ──────────────────────────────────────────────────────────────────
 
 func (c *MqttClient) onConnect(client mqtt.Client) {
-	slog.Info("MQTT: connected to broker")
+	c.logger.Info("connected to broker")
 
 	// Subscribe to all relevant topics
 	subscriptions := map[string]byte{
@@ -181,7 +184,7 @@ func (c *MqttClient) handleMessage(_ mqtt.Client, msg mqtt.Message) {
 
 	var data map[string]any
 	if err := json.Unmarshal(payload, &data); err != nil {
-		slog.Error("MQTT: failed to parse message", "topic", topic, "err", err)
+		c.logger.Error("failed to parse message", "topic", topic, "err", err)
 		return
 	}
 
@@ -190,7 +193,7 @@ func (c *MqttClient) handleMessage(_ mqtt.Client, msg mqtt.Message) {
 	case strings.HasPrefix(topic, "gbc/hardware/table/") && strings.HasSuffix(topic, "/ack"):
 		tableID := int(jsonFloat(data, "tableId"))
 		lightState := jsonString(data, "lightState")
-		slog.Info("MQTT: ACK received", "tableId", tableID, "lightState", lightState)
+		c.logger.Info("ACK received", "tableId", tableID, "lightState", lightState)
 		var ls domain.LightStatus
 		if lightState == "ON" {
 			ls = domain.LightOn
@@ -201,12 +204,12 @@ func (c *MqttClient) handleMessage(_ mqtt.Client, msg mqtt.Message) {
 
 	// ── ESP32 boot sync request ───────────────────────────────────
 	case topic == "gbc/hardware/sync/request":
-		slog.Info("MQTT: ESP32 sync request received")
+		c.logger.Info("ESP32 sync request received")
 		c.publishFullStateSync()
 
 	// ── Full sync ACK ─────────────────────────────────────────────
 	case topic == "gbc/hardware/sync/ack":
-		slog.Info("MQTT: full sync ACK received")
+		c.logger.Info("full sync ACK received")
 		c.coordinator.ConfirmFullSync()
 
 	// ── Hardware health response ──────────────────────────────────
@@ -225,13 +228,13 @@ func (c *MqttClient) handleMessage(_ mqtt.Client, msg mqtt.Message) {
 	// ── LWT / status ──────────────────────────────────────────────
 	case topic == "gbc/hardware/status":
 		status := jsonString(data, "status")
-		slog.Warn("MQTT: hardware status changed", "status", status)
+		c.logger.Warn("hardware status changed", "status", status)
 	}
 }
 
 func (c *MqttClient) publishRelayCommand(cmd domain.MqttCommand) {
 	if !c.IsConnected() {
-		slog.Warn("MQTT: not connected, relay command dropped", "tableId", cmd.TableID, "lightState", cmd.LightState)
+		c.logger.Warn("not connected, relay command dropped", "tableId", cmd.TableID, "lightState", cmd.LightState)
 		return
 	}
 	topic := fmt.Sprintf("gbc/hardware/table/%d/set", cmd.TableID)
@@ -242,7 +245,7 @@ func (c *MqttClient) publishRelayCommand(cmd domain.MqttCommand) {
 		"timestamp":  time.Now().UTC().Format(time.RFC3339),
 	})
 	c.client.Publish(topic, 1, false, payload)
-	slog.Info("MQTT: relay command published", "topic", topic, "lightState", cmd.LightState)
+	c.logger.Info("relay command published", "topic", topic, "lightState", cmd.LightState)
 }
 
 func (c *MqttClient) publishFullStateSync() {
@@ -264,7 +267,7 @@ func (c *MqttClient) publishFullStateSync() {
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
 	})
 	c.client.Publish("gbc/hardware/sync/response", 1, false, payload)
-	slog.Info("MQTT: full state sync published")
+	c.logger.Info("full state sync published")
 }
 
 func jsonFloat(m map[string]any, key string) float64 {

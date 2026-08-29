@@ -63,7 +63,7 @@ export default function BookingTimeline({ tables, bookings = [], onSlotClick, on
     <div className="border border-[#2a2a2e] rounded-[16px] overflow-hidden flex flex-col mt-4 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.55),0_4px_12px_-4px_rgba(0,0,0,0.35)]" style={{ background: 'linear-gradient(180deg, #1a1a1d 0%, #151517 100%)' }}>
       {/* Top Header / Date Picker Area */}
       <div className="px-6 py-4 flex items-center justify-between border-b border-[#2a2a2e] bg-[rgba(22,22,24,0.95)] sticky top-0 z-10">
-        <h2 className="text-[1.15rem] font-display font-bold text-white tracking-[-0.03em]">Timeline</h2>
+        <h2 className="text-[1.15rem] font-display font-bold text-white tracking-[-0.03em]">Schedule</h2>
         <div className="flex items-center gap-3 bg-[#121214] px-[0.9rem] py-[0.55rem] rounded-[10px] border border-[#2a2a2e]">
           <svg className="w-4 h-4 text-text-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />

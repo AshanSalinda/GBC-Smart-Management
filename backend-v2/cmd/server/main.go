@@ -33,10 +33,13 @@ import (
 	"gbc/backend/pkg/logger"
 )
 
+var log *slog.Logger
+
 func main() {
 	// ─── 1. Load Environment ─────────────────────────────────────
 	_ = godotenv.Load() // OK if .env doesn't exist in production
 	logger.Init(os.Getenv("NODE_ENV"))
+	log = slog.Default().With("module", "MAIN")
 
 	port := getEnv("PORT", "8000")
 	mongoURI := mustGetEnv("MONGODB_URI")
@@ -46,29 +49,29 @@ func main() {
 	mqttUser := mustGetEnv("MQTT_USERNAME")
 	mqttPass := mustGetEnv("MQTT_PASSWORD")
 
-	slog.Info("GBC Backend starting", "port", port)
+	log.Info("GBC Backend starting", "port", port)
 
 	// ─── 2. Connect MongoDB ───────────────────────────────────────
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
 	cancel()
 	if err != nil {
-		slog.Error("MongoDB connect failed", "err", err)
+		log.Error("MongoDB connect failed", "err", err)
 		os.Exit(1)
 	}
 	defer func() {
 		mongoClient.Disconnect(context.Background())
-		slog.Info("MongoDB disconnected")
+		log.Info("MongoDB disconnected")
 	}()
 
 	pingCtx, pingCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	if err := mongoClient.Ping(pingCtx, nil); err != nil {
 		pingCancel()
-		slog.Error("MongoDB ping failed", "err", err)
+		log.Error("MongoDB ping failed", "err", err)
 		os.Exit(1)
 	}
 	pingCancel()
-	slog.Info("MongoDB connected")
+	log.Info("MongoDB connected")
 
 	db := mongoClient.Database(dbName)
 
@@ -79,15 +82,15 @@ func main() {
 		option.WithCredentialsJSON([]byte(firebaseSAJSON)),
 	)
 	if err != nil {
-		slog.Error("Firebase init failed", "err", err)
+		log.Error("Firebase init failed", "err", err)
 		os.Exit(1)
 	}
 	authClient, err := firebaseApp.Auth(context.Background())
 	if err != nil {
-		slog.Error("Firebase auth client failed", "err", err)
+		log.Error("Firebase auth client failed", "err", err)
 		os.Exit(1)
 	}
-	slog.Info("Firebase Admin SDK initialized")
+	log.Info("Firebase Admin SDK initialized")
 
 	// ─── 4. Create Channels ───────────────────────────────────────
 	broadcastChan := make(chan []domain.TableState, 16)
@@ -99,7 +102,7 @@ func main() {
 	configRepo := repository.NewMongoConfigRepository(db)
 
 	if err := configRepo.EnsureDefault(); err != nil {
-		slog.Error("Config ensure default failed", "err", err)
+		log.Error("Config ensure default failed", "err", err)
 		os.Exit(1)
 	}
 
@@ -117,7 +120,7 @@ func main() {
 	// ─── 9. MQTT Client ───────────────────────────────────────────
 	mqttClient := hardware.New(mqttURL, mqttUser, mqttPass, tableSvc, mqttCmdChan)
 	if err := mqttClient.Connect(); err != nil {
-		slog.Error("MQTT connect failed", "err", err)
+		log.Error("MQTT connect failed", "err", err)
 		// Non-fatal: app can run without hardware connected
 	}
 
@@ -203,7 +206,7 @@ func main() {
 	// ─── 16. Start server (non-blocking) ──────────────────────────
 	serverErrChan := make(chan error, 1)
 	go func() {
-		slog.Info("Server listening", "port", port)
+		log.Info("Server listening", "port", port)
 		if err := app.Listen(fmt.Sprintf(":%s", port)); err != nil {
 			serverErrChan <- err
 		}
@@ -215,9 +218,9 @@ func main() {
 
 	select {
 	case sig := <-quit:
-		slog.Info("Shutdown signal received", "signal", sig)
+		log.Info("Shutdown signal received", "signal", sig)
 	case err := <-serverErrChan:
-		slog.Error("Server error", "err", err)
+		log.Error("Server error", "err", err)
 	}
 
 	// Cancel background goroutines
@@ -228,13 +231,13 @@ func main() {
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdownCancel()
 	if err := app.ShutdownWithContext(shutdownCtx); err != nil {
-		slog.Error("HTTP shutdown error", "err", err)
+		log.Error("HTTP shutdown error", "err", err)
 	}
 
 	// Disconnect MQTT (publishes OFFLINE LWT before closing)
 	mqttClient.Disconnect()
 
-	slog.Info("GBC Backend stopped cleanly")
+	log.Info("GBC Backend stopped cleanly")
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -244,7 +247,7 @@ func main() {
 func hydrateCache(venueCache *cache.VenueCache, bookingRepo domain.BookingRepository) {
 	activeBookings, err := bookingRepo.FindAllActiveNow(time.Now().UTC())
 	if err != nil {
-		slog.Error("Boot hydration failed", "err", err)
+		log.Error("Boot hydration failed", "err", err)
 		return
 	}
 	for _, b := range activeBookings {
@@ -260,7 +263,7 @@ func hydrateCache(venueCache *cache.VenueCache, bookingRepo domain.BookingReposi
 		}
 		venueCache.HydrateTable(b.TableID, cb)
 	}
-	slog.Info("In-memory cache hydrated", "activeTables", len(activeBookings))
+	log.Info("In-memory cache hydrated", "activeTables", len(activeBookings))
 }
 
 func getEnv(key, fallback string) string {
@@ -273,7 +276,7 @@ func getEnv(key, fallback string) string {
 func mustGetEnv(key string) string {
 	v := os.Getenv(key)
 	if v == "" {
-		slog.Error("required environment variable not set", "key", key)
+		log.Error("required environment variable not set", "key", key)
 		os.Exit(1)
 	}
 	return v

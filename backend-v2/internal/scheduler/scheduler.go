@@ -22,6 +22,7 @@ import (
 type Scheduler struct {
 	bookingRepo domain.BookingRepository
 	tableSvc    *service.TableService
+	logger      *slog.Logger
 
 	mu     sync.Mutex
 	timers map[string]*time.Timer // keyed by "{tableId}:start" or "{tableId}:end"
@@ -32,6 +33,7 @@ func New(bookingRepo domain.BookingRepository, tableSvc *service.TableService) *
 	return &Scheduler{
 		bookingRepo: bookingRepo,
 		tableSvc:    tableSvc,
+		logger:      slog.Default().With("module", "SCHD"),
 		timers:      make(map[string]*time.Timer),
 	}
 }
@@ -41,10 +43,10 @@ func New(bookingRepo domain.BookingRepository, tableSvc *service.TableService) *
 func (s *Scheduler) InitAll() {
 	for tableID := 1; tableID <= 4; tableID++ {
 		if err := s.RescheduleTable(tableID); err != nil {
-			slog.Error("Scheduler: failed to init table", "tableId", tableID, "err", err)
+			s.logger.Error("failed to init table", "tableId", tableID, "err", err)
 		}
 	}
-	slog.Info("Scheduler: deadline timers initialized for all tables")
+	s.logger.Info("deadline timers initialized for all tables")
 }
 
 // RescheduleTable clears existing timers for a table and sets new ones based on DB state.
@@ -99,7 +101,7 @@ func (s *Scheduler) StopAll() {
 		t.Stop()
 		delete(s.timers, key)
 	}
-	slog.Info("Scheduler: all timers stopped")
+	s.logger.Info("all timers stopped")
 }
 
 // ─── Timer Setters ────────────────────────────────────────────────────────────
@@ -120,7 +122,7 @@ func (s *Scheduler) setStartTimer(tableID int, bookingID string, checkIn time.Ti
 	s.timers[key] = timer
 	s.mu.Unlock()
 
-	slog.Info("Scheduler: START timer set", "tableId", tableID, "checkIn", checkIn.Format(time.RFC3339), "inSeconds", int(delay.Seconds()))
+	s.logger.Info("START timer set", "tableId", tableID, "checkIn", checkIn.Format(time.RFC3339), "inSeconds", int(delay.Seconds()))
 }
 
 func (s *Scheduler) setEndTimer(tableID int, bookingID string, checkOut time.Time) {
@@ -139,7 +141,7 @@ func (s *Scheduler) setEndTimer(tableID int, bookingID string, checkOut time.Tim
 	s.timers[key] = timer
 	s.mu.Unlock()
 
-	slog.Info("Scheduler: END timer set", "tableId", tableID, "checkOut", checkOut.Format(time.RFC3339), "inSeconds", int(delay.Seconds()))
+	s.logger.Info("END timer set", "tableId", tableID, "checkOut", checkOut.Format(time.RFC3339), "inSeconds", int(delay.Seconds()))
 }
 
 // ─── Timer Callbacks ──────────────────────────────────────────────────────────
@@ -153,18 +155,18 @@ func (s *Scheduler) handleStartFired(tableID int, bookingID string) {
 
 	b, err := s.bookingRepo.FindByID(bookingID)
 	if err != nil {
-		slog.Error("Scheduler: start-timer DB error", "tableId", tableID, "err", err)
+		s.logger.Error("start-timer DB error", "tableId", tableID, "err", err)
 		return
 	}
 	if b == nil || b.Status == "CANCELLED" {
-		slog.Warn("Scheduler: start-timer fired but booking gone — rescheduling", "tableId", tableID, "bookingId", bookingID)
+		s.logger.Warn("start-timer fired but booking gone — rescheduling", "tableId", tableID, "bookingId", bookingID)
 		s.RescheduleTable(tableID)
 		return
 	}
 
 	now := time.Now().UTC()
 	if !b.CheckInTime.After(now) && b.CheckOutTime.After(now) {
-		slog.Info("Scheduler: ACTIVATING table via deadline timer", "tableId", tableID, "bookingId", bookingID)
+		s.logger.Info("ACTIVATING table via deadline timer", "tableId", tableID, "bookingId", bookingID)
 		s.tableSvc.ActivateTable(tableID, domain.CurrentBooking{
 			BookingID:       b.ID,
 			BookerName:      b.BookerName,
@@ -178,7 +180,7 @@ func (s *Scheduler) handleStartFired(tableID int, bookingID string) {
 		// Chain: schedule the end timer for this booking
 		s.setEndTimer(tableID, b.ID, b.CheckOutTime)
 	} else {
-		slog.Warn("Scheduler: start-timer timing mismatch — rescheduling", "tableId", tableID)
+		s.logger.Warn("start-timer timing mismatch — rescheduling", "tableId", tableID)
 		s.RescheduleTable(tableID)
 	}
 }
@@ -192,17 +194,17 @@ func (s *Scheduler) handleEndFired(tableID int, bookingID string) {
 
 	table, ok := s.tableSvc.GetTable(tableID)
 	if ok && table.Status == domain.StatusBusy && table.CurrentBooking != nil && table.CurrentBooking.BookingID == bookingID {
-		slog.Info("Scheduler: DEACTIVATING table via deadline timer", "tableId", tableID, "bookingId", bookingID)
+		s.logger.Info("DEACTIVATING table via deadline timer", "tableId", tableID, "bookingId", bookingID)
 		s.tableSvc.DeactivateTable(tableID, "timer-end")
 	} else {
-		slog.Warn("Scheduler: end-timer state mismatch — skipping deactivation", "tableId", tableID)
+		s.logger.Warn("end-timer state mismatch — skipping deactivation", "tableId", tableID)
 	}
 
 	// Chain: find the next upcoming booking and schedule its start
 	now := time.Now().UTC()
 	next, err := s.bookingRepo.FindNextUpcoming(tableID, now)
 	if err != nil {
-		slog.Error("Scheduler: failed to find next booking", "tableId", tableID, "err", err)
+		s.logger.Error("failed to find next booking", "tableId", tableID, "err", err)
 		return
 	}
 	if next != nil {
@@ -224,7 +226,7 @@ func (s *Scheduler) reconcile() {
 		if table.Status == domain.StatusBusy && table.CurrentBooking != nil {
 			checkOut, err := time.Parse(time.RFC3339, table.CurrentBooking.CheckOutTime)
 			if err == nil && !now.Before(checkOut) {
-				slog.Warn("Scheduler(reconcile): booking expired, timer missed — deactivating", "tableId", tableID)
+				s.logger.Warn("reconcile: booking expired, timer missed — deactivating", "tableId", tableID)
 				s.tableSvc.DeactivateTable(tableID, "cron-reconcile")
 				s.RescheduleTable(tableID)
 			}
@@ -237,7 +239,7 @@ func (s *Scheduler) reconcile() {
 			if err != nil || active == nil {
 				continue
 			}
-			slog.Warn("Scheduler(reconcile): booking should be active, timer missed — activating", "tableId", tableID, "bookingId", active.ID)
+			s.logger.Warn("reconcile: booking should be active, timer missed — activating", "tableId", tableID, "bookingId", active.ID)
 			s.tableSvc.ActivateTable(tableID, domain.CurrentBooking{
 				BookingID:       active.ID,
 				BookerName:      active.BookerName,

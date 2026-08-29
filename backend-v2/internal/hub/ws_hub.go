@@ -14,14 +14,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gofiber/websocket/v2"
 	"gbc/backend/internal/domain"
+
+	"github.com/gofiber/websocket/v2"
 )
 
 const (
-	writeWait  = 10 * time.Second
-	pongWait   = 60 * time.Second
-	pingPeriod = (pongWait * 9) / 10
+	writeWait   = 10 * time.Second
+	pongWait    = 60 * time.Second
+	pingPeriod  = (pongWait * 9) / 10
 	sendBufSize = 32
 )
 
@@ -45,6 +46,7 @@ type Hub struct {
 	clients    map[*Client]struct{}
 	tablesCh   <-chan []domain.TableState
 	timelineCh <-chan []domain.Booking
+	logger     *slog.Logger
 
 	// Dependencies for INITIAL_STATE
 	cache    domain.TableCache
@@ -62,6 +64,7 @@ func New(
 		clients:    make(map[*Client]struct{}),
 		tablesCh:   tablesCh,
 		timelineCh: timelineCh,
+		logger:     slog.Default().With("module", "WEBS"),
 		cache:      cache,
 		timeline:   timeline,
 	}
@@ -121,7 +124,7 @@ func (h *Hub) register(c *Client) {
 	h.mu.Lock()
 	h.clients[c] = struct{}{}
 	h.mu.Unlock()
-	slog.Info("WS: client connected", "role", c.info.Role, "email", c.info.Email)
+	h.logger.Info("client connected", "role", c.info.Role, "email", c.info.Email)
 }
 
 func (h *Hub) unregister(c *Client) {
@@ -130,7 +133,7 @@ func (h *Hub) unregister(c *Client) {
 		delete(h.clients, c)
 	}
 	h.mu.Unlock()
-	slog.Info("WS: client disconnected", "role", c.info.Role)
+	h.logger.Info("client disconnected", "role", c.info.Role)
 }
 
 // ─── Initial State ────────────────────────────────────────────────────────────
@@ -148,13 +151,13 @@ func (h *Hub) sendInitialState(c *Client) {
 		if err == nil {
 			payload["timeline"] = tl
 		} else {
-			slog.Error("WS: failed to fetch timeline for INITIAL_STATE", "err", err)
+			h.logger.Error("failed to fetch timeline for INITIAL_STATE", "err", err)
 		}
 	}
 
 	data, err := json.Marshal(payload)
 	if err != nil {
-		slog.Error("WS: failed to marshal INITIAL_STATE", "err", err)
+		h.logger.Error("failed to marshal INITIAL_STATE", "err", err)
 		return
 	}
 
@@ -168,25 +171,37 @@ func (h *Hub) sendInitialState(c *Client) {
 // ─── Broadcasting ─────────────────────────────────────────────────────────────
 
 func (h *Hub) broadcastToAll(tables []domain.TableState) {
-	data, err := json.Marshal(tables)
+	payload := map[string]any{
+		"event":  "TABLES_UPDATED",
+		"tables": tables,
+	}
+	data, err := json.Marshal(payload)
 	if err != nil {
 		return
 	}
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	for c := range h.clients {
+		// Only admin and staff receive timeline updates.
+		if c.info.Role != "admin" && c.info.Role != "staff" {
+			continue
+		}
 		select {
 		case c.send <- data:
 		case <-c.ctx.Done():
 			// Skip — will be cleaned up by readPump
 		default:
-			slog.Warn("WS: send buffer full, TABLES_UPDATED dropped", "role", c.info.Role)
+			h.logger.Warn("send buffer full, TABLES_UPDATED dropped", "role", c.info.Role)
 		}
 	}
 }
 
 func (h *Hub) broadcastTimeline(tl []domain.Booking) {
-	data, err := json.Marshal(tl)
+	payload := map[string]any{
+		"event":    "TIMELINE_UPDATED",
+		"timeline": tl,
+	}
+	data, err := json.Marshal(payload)
 	if err != nil {
 		return
 	}
@@ -200,7 +215,7 @@ func (h *Hub) broadcastTimeline(tl []domain.Booking) {
 		case c.send <- data:
 		case <-c.ctx.Done():
 		default:
-			slog.Warn("WS: send buffer full, TIMELINE_UPDATED dropped", "role", c.info.Role)
+			h.logger.Warn("send buffer full, TIMELINE_UPDATED dropped", "role", c.info.Role)
 		}
 	}
 }
