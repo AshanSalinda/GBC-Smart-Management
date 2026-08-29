@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"fmt"
+	"strconv"
+
 	"gbc/backend/internal/domain"
 	"gbc/backend/internal/service"
 	"github.com/gofiber/fiber/v2"
@@ -18,21 +21,36 @@ func NewLightsHandler(tableSvc *service.TableService) *LightsHandler {
 // POST /api/lights/toggle
 func (h *LightsHandler) Toggle(c *fiber.Ctx) error {
 	var body struct {
-		TableID     int    `json:"tableId"`
+		TableID     any    `json:"tableId"`
 		TargetState string `json:"targetState"` // "ON" | "OFF"
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
-	if body.TableID < 1 || body.TableID > 4 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "tableId must be 1–4"})
+
+	var tableID int
+	var isAll bool
+
+	strID := fmt.Sprintf("%v", body.TableID)
+	if strID == "ALL" {
+		isAll = true
+		tableID = 0
+	} else {
+		parsed, err := strconv.Atoi(strID)
+		if err != nil || parsed < 1 || parsed > 4 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "tableId must be 1–4 or 'ALL'"})
+		}
+		tableID = parsed
 	}
+
 	if body.TargetState != "ON" && body.TargetState != "OFF" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "targetState must be ON or OFF"})
 	}
 
-	if _, ok := h.tableSvc.GetTable(body.TableID); !ok {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "table not found"})
+	if !isAll {
+		if _, ok := h.tableSvc.GetTable(tableID); !ok {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "table not found"})
+		}
 	}
 
 	var ls domain.LightStatus
@@ -41,7 +59,7 @@ func (h *LightsHandler) Toggle(c *fiber.Ctx) error {
 	} else {
 		ls = domain.LightOff
 	}
-	h.tableSvc.SetLightStatus(body.TableID, ls, "manual-toggle")
+	h.tableSvc.SetLightStatus(tableID, ls, "manual-toggle")
 
 	return c.JSON(fiber.Map{
 		"message":     "light toggle requested",

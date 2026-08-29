@@ -237,10 +237,16 @@ func (c *MqttClient) publishRelayCommand(cmd domain.MqttCommand) {
 		c.logger.Warn("not connected, relay command dropped", "tableId", cmd.TableID, "lightState", cmd.LightState)
 		return
 	}
-	topic := fmt.Sprintf("gbc/hardware/table/%d/set", cmd.TableID)
+
+	var target any = cmd.TableID
+	if cmd.TableID == 0 {
+		target = "ALL"
+	}
+
+	topic := fmt.Sprintf("gbc/hardware/table/%v/set", target)
 	payload, _ := json.Marshal(map[string]any{
 		"commandId":  cmd.CommandID,
-		"tableId":    cmd.TableID,
+		"tableId":    target,
 		"lightState": cmd.LightState,
 		"timestamp":  time.Now().UTC().Format(time.RFC3339),
 	})

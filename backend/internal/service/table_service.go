@@ -49,13 +49,25 @@ func (s *TableService) DeactivateTable(tableID int, source string) {
 
 // SetLightStatus applies a manual light override and queues the relay command.
 func (s *TableService) SetLightStatus(tableID int, targetState domain.LightStatus, source string) {
-	s.cache.SetLightStatus(tableID, targetState)
+	if tableID == 0 {
+		for i := 1; i <= 4; i++ {
+			s.cache.SetLightStatus(i, targetState)
+		}
+	} else {
+		s.cache.SetLightStatus(tableID, targetState)
+	}
+
 	lightCmd := "OFF"
 	if targetState == domain.LightOn {
 		lightCmd = "ON"
 	}
 	s.sendMqttCommand(tableID, lightCmd)
-	s.logger.Info("light override", "tableId", tableID, "state", lightCmd, "source", source)
+	
+	if tableID == 0 {
+		s.logger.Info("light override ALL", "state", lightCmd, "source", source)
+	} else {
+		s.logger.Info("light override", "tableId", tableID, "state", lightCmd, "source", source)
+	}
 }
 
 // UpdateCurrentBooking patches live booking metadata in the cache (used by PATCH booking).
