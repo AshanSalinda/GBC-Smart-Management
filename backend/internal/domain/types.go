@@ -68,7 +68,7 @@ type Booking struct {
 // VenueConfig is the global configuration stored in MongoDB.
 type VenueConfig struct {
 	HourlyRate         float64   `json:"hourlyRate"`
-	WorkingHoursPerDay int       `json:"workingHoursPerDay"`
+	VenueCloseTime     string    `json:"venueCloseTime"`
 	VenueStartTime     string    `json:"venueStartTime"` // "HH:MM"
 	UpdatedAt          time.Time `json:"updatedAt"`
 }

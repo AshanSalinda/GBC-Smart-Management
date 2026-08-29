@@ -14,7 +14,7 @@ import (
 type configDoc struct {
 	Key                string    `bson:"key"`
 	HourlyRate         float64   `bson:"hourlyRate"`
-	WorkingHoursPerDay int       `bson:"workingHoursPerDay"`
+	VenueCloseTime     string    `bson:"venueCloseTime"`
 	VenueStartTime     string    `bson:"venueStartTime"`
 	UpdatedAt          time.Time `bson:"updatedAt"`
 }
@@ -39,7 +39,7 @@ func (r *MongoConfigRepository) EnsureDefault() error {
 	_, err = r.col.InsertOne(context.Background(), configDoc{
 		Key:                "GLOBAL_CONFIG",
 		HourlyRate:         1500,
-		WorkingHoursPerDay: 16,
+		VenueCloseTime:     "00:00",
 		VenueStartTime:     "09:00",
 		UpdatedAt:          time.Now().UTC(),
 	})
@@ -60,7 +60,7 @@ func (r *MongoConfigRepository) Get() (*domain.VenueConfig, error) {
 	}
 	cfg := domain.VenueConfig{
 		HourlyRate:         doc.HourlyRate,
-		WorkingHoursPerDay: doc.WorkingHoursPerDay,
+		VenueCloseTime:     doc.VenueCloseTime,
 		VenueStartTime:     doc.VenueStartTime,
 		UpdatedAt:          doc.UpdatedAt,
 	}
@@ -82,7 +82,7 @@ func (r *MongoConfigRepository) Update(updates map[string]any) (*domain.VenueCon
 	}
 	cfg := domain.VenueConfig{
 		HourlyRate:         doc.HourlyRate,
-		WorkingHoursPerDay: doc.WorkingHoursPerDay,
+		VenueCloseTime:     doc.VenueCloseTime,
 		VenueStartTime:     doc.VenueStartTime,
 		UpdatedAt:          doc.UpdatedAt,
 	}

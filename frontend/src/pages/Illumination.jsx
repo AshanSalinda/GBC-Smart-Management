@@ -166,20 +166,21 @@ export default function Illumination() {
   const isAllOff = tables.length > 0 && tables.every(t => t.lightStatus === 'OFF' || t.lightStatus === 'PENDING-OFF');
 
   return (
-    <div className="max-w-[1600px] mx-auto min-h-screen animate-in fade-in duration-300">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+    <div className="max-w-[1600px] mx-auto animate-in fade-in duration-300">
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/5">
         <div>
-          <h1 className="text-4xl md:text-5xl font-display font-black tracking-tight text-white mb-2 drop-shadow-sm">
-            Illumination
-          </h1>
-          <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-light-on/10 border border-light-on/20 shadow-[0_0_15px_rgba(240,230,168,0.05)]">
-            <span className="w-2 h-2 rounded-full bg-light-on animate-pulse shadow-[0_0_8px_var(--color-light-on)]" />
-            <span className="text-light-on text-xs font-bold tracking-widest uppercase">Hardware Synced</span>
+          <div className="flex items-center gap-4 mb-2">
+            <h1 className="text-4xl font-semibold tracking-tight text-white">
+              Illumination
+            </h1>
           </div>
+          <p className="text-text-dim text-sm">
+            Control overhead lighting across all tables.
+          </p>
         </div>
 
         {/* Quick Actions */}
-        <div className="flex items-center justify-center md:justify-end gap-3 w-full md:w-auto mt-4 md:mt-0">
+        <div className="flex items-center shrink-0 justify-center md:justify-end gap-3 w-full md:w-auto mt-4 md:mt-0">
           <button
             onClick={turnAllOn}
             className={`flex items-center gap-2 px-6 py-3 rounded-xl transition text-sm font-bold border shadow-lg ${isAllOn
@@ -201,22 +202,14 @@ export default function Illumination() {
         </div>
       </div>
 
-      {/* Premium Info Banner (Optimized for Mobile) */}
-      <div className="relative overflow-hidden flex items-start md:items-center gap-5 p-5 md:p-6 rounded-[24px] mb-12 border border-white/10 bg-[#18181b] shadow-xl">
-        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-light-on/30 to-transparent opacity-50" />
-        <div className="relative bg-[#18181b] border border-white/10 text-light-on p-3.5 rounded-2xl flex-shrink-0 shadow-[0_0_20px_rgba(240,230,168,0.1)]">
-          <Info size={24} strokeWidth={2.5} />
-        </div>
-        <div className="flex-1">
-          <h3 className="text-white font-bold text-lg mb-1 tracking-tight">Manual Override Enabled</h3>
-          <p className="text-text-dim text-[15px] font-medium leading-relaxed">
-            Instantly toggle any table’s overhead light by tapping its card. This state operates completely independently of the active booking status.
-          </p>
-        </div>
+      {/* Quick Tip */}
+      <div className="flex items-center justify-center gap-2 mb-8 text-sm text-text-dim">
+        <Info size={16} className="text-light-on/80" />
+        <p>Tap any card to manually toggle its light (overrides booking status).</p>
       </div>
 
       {/* Grid - Database Key Anchoring Applied Here */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-4 gap-6 mb-12">
+      <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-4 gap-6">
         {tables.length > 0 ? (
           tables.map((table) => (
             <TableCard key={table.tableId} table={table} onToggle={toggleLight} />

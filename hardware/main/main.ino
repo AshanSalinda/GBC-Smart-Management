@@ -89,13 +89,13 @@ namespace Hardware {
   TableState tables[4];
   AckCallback_t onStateChanged = nullptr;
 
-  const uint8_t NETWORK_INDICATOR_PIN = 2;  // use 27 in production
+  const uint8_t NETWORK_INDICATOR_PIN = 27;
   bool networkIndicatorState = false;
 
   void begin(AckCallback_t ackCallback) {
     onStateChanged = ackCallback;
 
-    uint8_t pins[4] = {32, 33, 25, 26};
+    uint8_t pins[4] = {26, 25, 33, 32};
     for (int i = 0; i < 4; i++) {
       tables[i].gpioPin = pins[i];
       tables[i].pending = false;
@@ -103,7 +103,7 @@ namespace Hardware {
       tables[i].timestamp = 0;
       tables[i].commandId[0] = '\0';
       pinMode(tables[i].gpioPin, OUTPUT);
-      digitalWrite(tables[i].gpioPin, LOW);
+      digitalWrite(tables[i].gpioPin, HIGH);
     }
 
     pinMode(NETWORK_INDICATOR_PIN, OUTPUT);
@@ -112,7 +112,7 @@ namespace Hardware {
 
   void setImmediate(int id, bool isOn) {
     if (id >= 1 && id <= 4) {
-      digitalWrite(tables[id - 1].gpioPin, isOn ? HIGH : LOW);
+      digitalWrite(tables[id - 1].gpioPin, isOn ? LOW : HIGH);
     }
   }
 
@@ -142,7 +142,7 @@ namespace Hardware {
     for (int i = 0; i < 4; i++) {
       if (tables[i].pending && (currentMillis - tables[i].timestamp >= 500)) {  // Debounce Delay 500ms
         
-        digitalWrite(tables[i].gpioPin, tables[i].targetIsOn ? HIGH : LOW);
+        digitalWrite(tables[i].gpioPin, tables[i].targetIsOn ? LOW : HIGH);
         LOG_PRINTF("[HARDWARE] Table %d state switched to %s\n", i + 1, tables[i].targetIsOn ? "ON" : "OFF");
         
         if (onStateChanged) {
@@ -163,7 +163,7 @@ namespace Hardware {
 
   bool isTableOn(int id) {
     if (id >= 1 && id <= 4) {
-      return digitalRead(tables[id - 1].gpioPin) == HIGH;
+      return digitalRead(tables[id - 1].gpioPin) == LOW;
     }
     return false;
   }
@@ -185,6 +185,11 @@ namespace Connection {
     wifiTicker.attach(1, Hardware::toggleNetworkIndicator);
   }
 
+  void onSaveCredentials() {
+    LOG_PRINTLN("[WIFI] Credentials saved! Connecting...");
+    wifiTicker.attach(0.2, Hardware::toggleNetworkIndicator);
+  }
+
   void begin() {
     WiFi.setAutoReconnect(true); 
     
@@ -192,6 +197,7 @@ namespace Connection {
     wm.setConnectTimeout(30);
     wm.setConfigPortalTimeout(180);
     wm.setAPCallback(onPortalOpen);
+    wm.setSaveConfigCallback(onSaveCredentials);
     wm.setWebServerCallback([&wm]() {
       auto redirectToWifi = [&wm]() {
         wm.server->sendHeader("Location", "/wifi", true);
@@ -204,6 +210,8 @@ namespace Connection {
       wm.server->on("/exit", redirectToWifi);
       wm.server->on("/restart", redirectToWifi);
     });
+
+    wifiTicker.attach(0.2, Hardware::toggleNetworkIndicator);
 
     if (!wm.autoConnect(AP_PORTAL_NAME)) {
       LOG_PRINTLN("[WIFI] Setup portal timed out. Switching to background retries...");
