@@ -77,7 +77,11 @@ func (s *TableService) UpdateCurrentBooking(tableID int, partial domain.CurrentB
 
 // ConfirmLightStatus resolves PENDING-ON/PENDING-OFF in the cache after hardware ACK.
 func (s *TableService) ConfirmLightStatus(tableID int, state domain.LightStatus) {
-	s.cache.ConfirmLightStatus(tableID, state)
+	if tableID == 0 {
+		s.cache.ConfirmAllLightStatuses(state)
+	} else {
+		s.cache.ConfirmLightStatus(tableID, state)
+	}
 }
 
 // ConfirmFullSync resolves all pending states after hardware sends a sync ACK.

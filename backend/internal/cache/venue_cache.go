@@ -154,6 +154,25 @@ func (c *VenueCache) ConfirmLightStatus(tableID int, state domain.LightStatus) {
 	}
 }
 
+// ConfirmAllLightStatuses resolves PENDING states for all tables after a hardware ALL ACK.
+func (c *VenueCache) ConfirmAllLightStatuses(state domain.LightStatus) {
+	c.mu.Lock()
+	changed := false
+	for i := 1; i <= 4; i++ {
+		t := c.tables[i]
+		if t.LightStatus != state {
+			t.LightStatus = state
+			c.tables[i] = t
+			changed = true
+		}
+	}
+	c.mu.Unlock()
+	if changed {
+		c.logger.Info("all lights confirmed", "state", state)
+		c.broadcast()
+	}
+}
+
 // ConfirmFullSync resolves all PENDING states after a full hardware sync ACK.
 func (c *VenueCache) ConfirmFullSync() {
 	c.mu.Lock()

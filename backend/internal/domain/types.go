@@ -139,6 +139,7 @@ type TableCache interface {
 	SetLightStatus(tableID int, targetState LightStatus)
 	SetAllLightStatuses(targetState LightStatus)
 	ConfirmLightStatus(tableID int, state LightStatus)
+	ConfirmAllLightStatuses(state LightStatus)
 	ConfirmFullSync()
 	UpdateCurrentBooking(tableID int, partial CurrentBooking)
 }
