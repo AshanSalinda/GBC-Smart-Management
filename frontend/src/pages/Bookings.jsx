@@ -3,7 +3,7 @@ import BookingTimeline from '../components/timeline/BookingTimeline';
 import CreateBookingModal from '../components/timeline/CreateBookingModal';
 import useStore from '../store/useStore';
 
-import { createBooking, updateBooking } from '../api/bookings';
+import { createBooking, updateBooking, getTimelineByDate } from '../api/bookings';
 
 const formatTime = (ms) => {
   if (!ms) return '--:--';
@@ -40,7 +40,9 @@ const tablePropsAreEqual = (prevProps, nextProps) => {
     prev.status === next.status &&
     prev.currentBooking?.id === next.currentBooking?.id &&
     prev.currentBooking?.isPaid === next.currentBooking?.isPaid &&
-    prev.currentBooking?.amount === next.currentBooking?.amount
+    prev.currentBooking?.amount === next.currentBooking?.amount &&
+    prev.currentBooking?.checkInTime === next.currentBooking?.checkInTime &&
+    prev.currentBooking?.checkOutTime === next.currentBooking?.checkOutTime
   );
 };
 
@@ -153,9 +155,35 @@ export default function Bookings() {
   const [editingBooking, setEditingBooking] = useState(null);
   const [showTimeline, setShowTimeline] = useState(false);
 
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [fetchedTimeline, setFetchedTimeline] = useState(null);
+
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    if (selectedDate === today) {
+      setFetchedTimeline(null);
+      return;
+    }
+
+    let isMounted = true;
+    const fetchTimeline = async () => {
+      try {
+        const data = await getTimelineByDate(selectedDate);
+        if (isMounted) setFetchedTimeline(data);
+      } catch (err) {
+        console.error("Failed to fetch timeline for date:", err);
+      }
+    };
+    fetchTimeline();
+
+    return () => { isMounted = false; };
+  }, [selectedDate]);
+
+  const currentTimelineSource = fetchedTimeline || rawTimeline;
+
   // Map backend timeline to UI shape
   const timelineBookings = React.useMemo(() => {
-    return rawTimeline.map(b => ({
+    return currentTimelineSource.map(b => ({
       id: b.id,
       tableId: b.tableId,
       player: b.bookerName || 'Unknown',
@@ -165,7 +193,7 @@ export default function Bookings() {
       amount: b.amount || 0,
       paid: !!b.isPaid
     }));
-  }, [rawTimeline]);
+  }, [currentTimelineSource]);
 
   // Fetch Global Config once on mount
   useEffect(() => {
@@ -257,11 +285,13 @@ export default function Bookings() {
           onSlotClick={setSelectedSlot}
           onEditBooking={setEditingBooking}
           globalConfig={globalConfig}
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
         />
       ) : (
         <div className="h-[400px] w-full rounded-[16px] border border-[#2a2a2e] flex flex-col items-center justify-center bg-[#151517] shadow-xl mt-4 animate-pulse">
           <div className="w-8 h-8 border-4 border-[#3a3a40] border-t-accent rounded-full animate-spin mb-4" />
-          <p className="text-text-dim text-sm font-medium">Loading Timeline...</p>
+          <p className="text-text-dim text-sm font-medium">Loading Schedule...</p>
         </div>
       )}
 

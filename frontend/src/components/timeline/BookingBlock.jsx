@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Modal from '../ui/Modal';
-import { timeToPixels, durationToPixels } from './timelineUtils';
+import { timeToPixelsFromOpenTime, durationToPixels } from './timelineUtils';
 import { updateBooking, cancelBooking } from '../../api/bookings';
 
 const formatTime = (ms) => {
@@ -8,13 +8,13 @@ const formatTime = (ms) => {
   return new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 };
 
-export default function BookingBlock({ booking, onEditBooking, openHour }) {
+export default function BookingBlock({ booking, onEditBooking, openTimeMs }) {
   const [showModal, setShowModal] = useState(false);
   const isPlaying = Date.now() >= booking.startTime && Date.now() <= (booking.startTime + booking.duration);
   const isPast = Date.now() > (booking.startTime + booking.duration);
 
   // Position and Width
-  const left = timeToPixels(booking.startTime, openHour);
+  const left = timeToPixelsFromOpenTime(booking.startTime, openTimeMs);
   const width = durationToPixels(booking.duration);
   const isPaid = booking.paid;
 
@@ -32,7 +32,6 @@ export default function BookingBlock({ booking, onEditBooking, openHour }) {
       await updateBooking(booking.id, {
         paid: !isPaid
       });
-      // Assuming parent re-fetches or socket updates the state, otherwise we might need to rely on that.
     } catch (err) {
       console.error('Failed to toggle paid status', err);
     } finally {
