@@ -274,7 +274,7 @@ namespace Cloud {
 
     if (tableId == 0) {
       doc["tableId"] = "ALL";
-      snprintf(topic, sizeof(topic), "gbc/hardware/table/ALL/ack");
+      strcpy(topic, "gbc/hardware/table/ALL/ack");
     } else {
       doc["tableId"] = tableId;
       snprintf(topic, sizeof(topic), "gbc/hardware/table/%d/ack", tableId);
@@ -369,7 +369,7 @@ namespace Cloud {
     mqtt_cfg.credentials.username = MQTT_USER;
     mqtt_cfg.credentials.authentication.password = MQTT_PASS;
     
-    static char clientId[32];
+    static char clientId[48];  // DEVICE_NAME(14) + '_'(1) + MAC(17) + null = 33 min
     snprintf(clientId, sizeof(clientId), "%s_%s", DEVICE_NAME, WiFi.macAddress().c_str());
     mqtt_cfg.credentials.client_id = clientId;
 
