@@ -67,10 +67,10 @@ type Booking struct {
 
 // VenueConfig is the global configuration stored in MongoDB.
 type VenueConfig struct {
-	HourlyRate         float64   `json:"hourlyRate"`
-	VenueCloseTime     string    `json:"venueCloseTime"`
-	VenueStartTime     string    `json:"venueStartTime"` // "HH:MM"
-	UpdatedAt          time.Time `json:"updatedAt"`
+	HourlyRate     float64   `json:"hourlyRate"`
+	VenueCloseTime string    `json:"venueCloseTime"`
+	VenueStartTime string    `json:"venueStartTime"` // "HH:MM"
+	UpdatedAt      time.Time `json:"updatedAt"`
 }
 
 // ─── Inter-Service Messages ────────────────────────────────────────────────────
@@ -137,6 +137,7 @@ type TableCache interface {
 	ActivateTable(tableID int, booking CurrentBooking)
 	DeactivateTable(tableID int)
 	SetLightStatus(tableID int, targetState LightStatus)
+	SetAllLightStatuses(targetState LightStatus)
 	ConfirmLightStatus(tableID int, state LightStatus)
 	ConfirmFullSync()
 	UpdateCurrentBooking(tableID int, partial CurrentBooking)

@@ -6,6 +6,7 @@ import (
 
 	"gbc/backend/internal/domain"
 	"gbc/backend/internal/service"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -29,11 +30,9 @@ func (h *LightsHandler) Toggle(c *fiber.Ctx) error {
 	}
 
 	var tableID int
-	var isAll bool
 
 	strID := fmt.Sprintf("%v", body.TableID)
 	if strID == "ALL" {
-		isAll = true
 		tableID = 0
 	} else {
 		parsed, err := strconv.Atoi(strID)
@@ -47,7 +46,7 @@ func (h *LightsHandler) Toggle(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "targetState must be ON or OFF"})
 	}
 
-	if !isAll {
+	if tableID != 0 {
 		if _, ok := h.tableSvc.GetTable(tableID); !ok {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "table not found"})
 		}

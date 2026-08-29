@@ -50,9 +50,7 @@ func (s *TableService) DeactivateTable(tableID int, source string) {
 // SetLightStatus applies a manual light override and queues the relay command.
 func (s *TableService) SetLightStatus(tableID int, targetState domain.LightStatus, source string) {
 	if tableID == 0 {
-		for i := 1; i <= 4; i++ {
-			s.cache.SetLightStatus(i, targetState)
-		}
+		s.cache.SetAllLightStatuses(targetState)
 	} else {
 		s.cache.SetLightStatus(tableID, targetState)
 	}

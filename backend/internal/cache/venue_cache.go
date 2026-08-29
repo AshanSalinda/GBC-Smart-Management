@@ -121,6 +121,23 @@ func (c *VenueCache) SetLightStatus(tableID int, targetState domain.LightStatus)
 	c.broadcast()
 }
 
+// SetAllLightStatuses manually overrides the light state for all tables in a single transaction.
+func (c *VenueCache) SetAllLightStatuses(targetState domain.LightStatus) {
+	c.mu.Lock()
+	for i := 1; i <= 4; i++ {
+		t := c.tables[i]
+		if targetState == domain.LightOn {
+			t.LightStatus = domain.LightPendingOn
+		} else {
+			t.LightStatus = domain.LightPendingOff
+		}
+		c.tables[i] = t
+	}
+	c.mu.Unlock()
+	c.logger.Info("all light statuses set", "target", targetState)
+	c.broadcast()
+}
+
 // ConfirmLightStatus resolves a PENDING state to a final state after hardware ACK.
 func (c *VenueCache) ConfirmLightStatus(tableID int, state domain.LightStatus) {
 	c.mu.Lock()
