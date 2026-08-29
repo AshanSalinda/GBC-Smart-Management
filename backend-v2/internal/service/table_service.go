@@ -14,31 +14,37 @@ import (
 // It bridges the cache (which broadcasts to WS) and the MQTT client (via mqttCmdChan).
 //
 // Dependency graph:
-//   handler/scheduler → TableService → Cache → broadcastChan → WS Hub
-//                                    → mqttCmdChan          → MQTT Client
-//   MQTT Client (ACK) → TableService.ConfirmLightStatus() → Cache → broadcastChan
+//
+//	handler/scheduler → TableService → Cache → broadcastChan → WS Hub
+//	                                 → mqttCmdChan          → MQTT Client
+//	MQTT Client (ACK) → TableService.ConfirmLightStatus() → Cache → broadcastChan
 type TableService struct {
 	cache       domain.TableCache
 	mqttCmdChan chan<- domain.MqttCommand
+	logger      *slog.Logger
 }
 
 // NewTableService creates a new TableService.
 func NewTableService(cache domain.TableCache, mqttCmdChan chan<- domain.MqttCommand) *TableService {
-	return &TableService{cache: cache, mqttCmdChan: mqttCmdChan}
+	return &TableService{
+		cache:       cache,
+		mqttCmdChan: mqttCmdChan,
+		logger:      slog.Default().With("module", "TABL"),
+	}
 }
 
 // ActivateTable transitions a table to BUSY and queues a relay ON command for the ESP32.
 func (s *TableService) ActivateTable(tableID int, booking domain.CurrentBooking, source string) {
 	s.cache.ActivateTable(tableID, booking)
 	s.sendMqttCommand(tableID, "ON")
-	slog.Info("TableService: activated", "tableId", tableID, "source", source)
+	s.logger.Info("activated", "tableId", tableID, "source", source)
 }
 
 // DeactivateTable transitions a table to AVAILABLE and queues a relay OFF command.
 func (s *TableService) DeactivateTable(tableID int, source string) {
 	s.cache.DeactivateTable(tableID)
 	s.sendMqttCommand(tableID, "OFF")
-	slog.Info("TableService: deactivated", "tableId", tableID, "source", source)
+	s.logger.Info("deactivated", "tableId", tableID, "source", source)
 }
 
 // SetLightStatus applies a manual light override and queues the relay command.
@@ -49,7 +55,7 @@ func (s *TableService) SetLightStatus(tableID int, targetState domain.LightStatu
 		lightCmd = "ON"
 	}
 	s.sendMqttCommand(tableID, lightCmd)
-	slog.Info("TableService: light override", "tableId", tableID, "state", lightCmd, "source", source)
+	s.logger.Info("light override", "tableId", tableID, "state", lightCmd, "source", source)
 }
 
 // UpdateCurrentBooking patches live booking metadata in the cache (used by PATCH booking).
@@ -92,6 +98,6 @@ func (s *TableService) sendMqttCommand(tableID int, lightState string) {
 	select {
 	case s.mqttCmdChan <- cmd:
 	default:
-		slog.Warn("TableService: mqttCmdChan full, MQTT command dropped", "tableId", tableID, "lightState", lightState)
+		s.logger.Warn("mqttCmdChan full, MQTT command dropped", "tableId", tableID, "lightState", lightState)
 	}
 }
