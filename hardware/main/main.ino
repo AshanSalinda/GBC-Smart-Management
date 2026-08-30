@@ -456,7 +456,7 @@ namespace Cloud {
     doc["commandId"] = commandId;
     doc["deviceName"] = DEVICE_NAME;
     doc["mac"] = WiFi.macAddress();
-    doc["uptime"] = millis();
+    doc["uptime"] = esp_timer_get_time() / 1000000ULL;
     doc["freeHeap"] = ESP.getFreeHeap();
     doc["heapSize"] = ESP.getHeapSize();
     doc["temperature"] = temperatureRead();
