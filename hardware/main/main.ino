@@ -91,6 +91,8 @@ namespace Hardware {
 
   const uint8_t NETWORK_INDICATOR_PIN = 27;
   bool networkIndicatorState = false;
+  bool winkPending = false;
+  unsigned long winkEndTime = 0;
 
   void begin(AckCallback_t ackCallback) {
     onStateChanged = ackCallback;
@@ -145,6 +147,13 @@ namespace Hardware {
     setNetworkIndicator(!networkIndicatorState);
   }
 
+  void winkNetworkIndicator() {
+    if (!networkIndicatorState || winkPending) return;
+    winkPending = true;
+    winkEndTime = millis() + 100;
+    digitalWrite(NETWORK_INDICATOR_PIN, LOW);
+  }
+
   void update() {
     unsigned long currentMillis = millis();
 
@@ -166,9 +175,18 @@ namespace Hardware {
 
     // 2. Process Connection Indicator
     if (!Connection::isConnected() || !Cloud::isConnected()) {
+      winkPending = false;  // Cancel any active wink before changing indicator state
       if (networkIndicatorState) setNetworkIndicator(false); // Turn OFF if disconnected
     } else {
       if (!networkIndicatorState) setNetworkIndicator(true); // Turn ON if both connected
+    }
+
+    // 3. Restore LED after wink window expires
+    if (winkPending && currentMillis >= winkEndTime) {
+      winkPending = false;
+      if (networkIndicatorState) {
+        digitalWrite(NETWORK_INDICATOR_PIN, HIGH);
+      }
     }
   }
 
@@ -337,6 +355,8 @@ namespace Cloud {
 
           if (!lState || strcmp(lState, "null") == 0) break;
           bool isOn = (strcmp(lState, "ON") == 0);
+
+          Hardware::winkNetworkIndicator();
 
           // Check if tableId is the string "ALL" or an integer
           if (doc["tableId"].is<const char*>() && strcmp(doc["tableId"].as<const char*>(), "ALL") == 0) {
