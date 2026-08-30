@@ -378,6 +378,7 @@ namespace Cloud {
 
     mqtt_cfg.session.keepalive = 30;
     mqtt_cfg.session.disable_clean_session = false;
+    mqtt_cfg.network.timeout_ms = 30000;
 
     mqtt_cfg.buffer.size = 2048; 
     mqtt_cfg.session.last_will.topic = "gbc/hardware/status";
