@@ -317,6 +317,7 @@ namespace Cloud {
         const int setPrefixLen = sizeof(setPrefix) - 1;
 
         if (event->topic_len == syncTopicLen && strncmp(event->topic, syncTopic, syncTopicLen) == 0) {
+          LOG_PRINTLN("[MQTT] Sync command received.");
           for (JsonObject table : doc["tables"].as<JsonArray>()) {
             const char* stateStr = table["lightState"];
             bool isOn = (stateStr && strcmp(stateStr, "ON") == 0);
@@ -326,6 +327,7 @@ namespace Cloud {
           acknowledgeSync(cmdId ? cmdId : "");
         }
         else if (event->topic_len == healthTopicLen && strncmp(event->topic, healthTopic, healthTopicLen) == 0) {
+          LOG_PRINTLN("[MQTT] Health command received.");
           const char* cmdId = doc["commandId"];
           publishHealthStatus(cmdId ? cmdId : "");
         }
@@ -345,6 +347,7 @@ namespace Cloud {
           } else {
             int tId = doc["tableId"].as<int>();
             if (tId >= 1 && tId <= 4) {
+              LOG_PRINTLN("[MQTT] Table command received.");
               Hardware::queueState(tId, isOn, cmdId ? cmdId : "");
             }
           }
