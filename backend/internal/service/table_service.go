@@ -49,13 +49,23 @@ func (s *TableService) DeactivateTable(tableID int, source string) {
 
 // SetLightStatus applies a manual light override and queues the relay command.
 func (s *TableService) SetLightStatus(tableID int, targetState domain.LightStatus, source string) {
-	s.cache.SetLightStatus(tableID, targetState)
+	if tableID == 0 {
+		s.cache.SetAllLightStatuses(targetState)
+	} else {
+		s.cache.SetLightStatus(tableID, targetState)
+	}
+
 	lightCmd := "OFF"
 	if targetState == domain.LightOn {
 		lightCmd = "ON"
 	}
 	s.sendMqttCommand(tableID, lightCmd)
-	s.logger.Info("light override", "tableId", tableID, "state", lightCmd, "source", source)
+	
+	if tableID == 0 {
+		s.logger.Info("light override ALL", "state", lightCmd, "source", source)
+	} else {
+		s.logger.Info("light override", "tableId", tableID, "state", lightCmd, "source", source)
+	}
 }
 
 // UpdateCurrentBooking patches live booking metadata in the cache (used by PATCH booking).
@@ -67,7 +77,11 @@ func (s *TableService) UpdateCurrentBooking(tableID int, partial domain.CurrentB
 
 // ConfirmLightStatus resolves PENDING-ON/PENDING-OFF in the cache after hardware ACK.
 func (s *TableService) ConfirmLightStatus(tableID int, state domain.LightStatus) {
-	s.cache.ConfirmLightStatus(tableID, state)
+	if tableID == 0 {
+		s.cache.ConfirmAllLightStatuses(state)
+	} else {
+		s.cache.ConfirmLightStatus(tableID, state)
+	}
 }
 
 // ConfirmFullSync resolves all pending states after hardware sends a sync ACK.
