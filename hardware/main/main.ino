@@ -166,9 +166,9 @@ namespace Hardware {
 
     // 2. Process Connection Indicator
     if (!Connection::isConnected() || !Cloud::isConnected()) {
-      if (!networkIndicatorState) setNetworkIndicator(true); // Turn ON if either disconnected
+      if (networkIndicatorState) setNetworkIndicator(false); // Turn OFF if disconnected
     } else {
-      if (networkIndicatorState) setNetworkIndicator(false); // Turn OFF if both connected
+      if (!networkIndicatorState) setNetworkIndicator(true); // Turn ON if both connected
     }
   }
 
