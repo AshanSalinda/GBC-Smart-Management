@@ -146,21 +146,13 @@ export default function Illumination() {
     }
   }, []);
 
-  const turnAllOn = useCallback(() => {
-    tables.forEach(t => {
-      if (t.lightStatus !== 'ON' && t.lightStatus !== 'PENDING-ON') {
-        toggleLight(t.tableId, t.lightStatus);
-      }
-    });
-  }, [tables, toggleLight]);
-
-  const turnAllOff = useCallback(() => {
-    tables.forEach(t => {
-      if (t.lightStatus !== 'OFF' && t.lightStatus !== 'PENDING-OFF') {
-        toggleLight(t.tableId, t.lightStatus);
-      }
-    });
-  }, [tables, toggleLight]);
+  const toggleAllLights = useCallback(async (targetState) => {
+    try {
+      await toggleLightApi('ALL', targetState);
+    } catch (error) {
+      console.error(`Failed to turn all lights ${targetState.toLowerCase()}:`, error);
+    }
+  }, []);
 
   const isAllOn = tables.length > 0 && tables.every(t => t.lightStatus === 'ON' || t.lightStatus === 'PENDING-ON');
   const isAllOff = tables.length > 0 && tables.every(t => t.lightStatus === 'OFF' || t.lightStatus === 'PENDING-OFF');
@@ -182,7 +174,7 @@ export default function Illumination() {
         {/* Quick Actions */}
         <div className="flex items-center shrink-0 justify-center md:justify-end gap-3 w-full md:w-auto mt-4 md:mt-0">
           <button
-            onClick={turnAllOn}
+            onClick={() => toggleAllLights('ON')}
             className={`flex items-center gap-2 px-6 py-3 rounded-xl transition text-sm font-bold border shadow-lg ${isAllOn
               ? 'bg-light-on/15 text-light-on border-light-on/30 shadow-[0_0_20px_rgba(240,230,168,0.2)]'
               : 'bg-gradient-to-b from-white/10 to-white/5 hover:from-white/15 hover:to-white/10 text-white/90 border-white/10 hover:border-white/20 active:scale-[0.97]'
@@ -191,7 +183,7 @@ export default function Illumination() {
             <Lightbulb size={18} className={isAllOn ? "text-light-on" : "text-white/70"} /> All On
           </button>
           <button
-            onClick={turnAllOff}
+            onClick={() => toggleAllLights('OFF')}
             className={`flex items-center gap-2 px-6 py-3 rounded-xl transition text-sm font-bold border shadow-lg ${isAllOff
               ? 'bg-black text-text-dim border-border-light shadow-[inset_0_2px_12px_rgba(0,0,0,0.6)]'
               : 'bg-gradient-to-b from-black/20 to-black/40 hover:from-black/10 hover:to-black/30 text-white/80 border-white/5 hover:border-white/10 active:scale-[0.97]'

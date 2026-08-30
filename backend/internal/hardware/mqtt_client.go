@@ -191,7 +191,12 @@ func (c *MqttClient) handleMessage(_ mqtt.Client, msg mqtt.Message) {
 	switch {
 	// ── ACK from ESP32 ────────────────────────────────────────────
 	case strings.HasPrefix(topic, "gbc/hardware/table/") && strings.HasSuffix(topic, "/ack"):
-		tableID := int(jsonFloat(data, "tableId"))
+		var tableID int
+		if fmt.Sprintf("%v", data["tableId"]) == "ALL" {
+			tableID = 0
+		} else {
+			tableID = int(jsonFloat(data, "tableId"))
+		}
 		lightState := jsonString(data, "lightState")
 		c.logger.Info("ACK received", "tableId", tableID, "lightState", lightState)
 		var ls domain.LightStatus
@@ -237,10 +242,16 @@ func (c *MqttClient) publishRelayCommand(cmd domain.MqttCommand) {
 		c.logger.Warn("not connected, relay command dropped", "tableId", cmd.TableID, "lightState", cmd.LightState)
 		return
 	}
-	topic := fmt.Sprintf("gbc/hardware/table/%d/set", cmd.TableID)
+
+	var target any = cmd.TableID
+	if cmd.TableID == 0 {
+		target = "ALL"
+	}
+
+	topic := fmt.Sprintf("gbc/hardware/table/%v/set", target)
 	payload, _ := json.Marshal(map[string]any{
 		"commandId":  cmd.CommandID,
-		"tableId":    cmd.TableID,
+		"tableId":    target,
 		"lightState": cmd.LightState,
 		"timestamp":  time.Now().UTC().Format(time.RFC3339),
 	})
