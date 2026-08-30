@@ -88,9 +88,14 @@ namespace Hardware {
 
   TableState tables[4];
   AckCallback_t onStateChanged = nullptr;
+  enum IndicatorState : uint8_t { 
+    NET_DISCONNECTED,
+    NET_NO_INTERNET,
+    NET_ONLINE
+  };
 
   const uint8_t NETWORK_INDICATOR_PIN = 27;
-  bool networkIndicatorState = false;
+  IndicatorState indicatorState = NET_DISCONNECTED;
   bool winkPending = false;
   unsigned long winkEndTime = 0;
 
@@ -138,17 +143,12 @@ namespace Hardware {
     }
   }
 
-  void setNetworkIndicator(bool isOn) {
-    networkIndicatorState = isOn;
-    digitalWrite(NETWORK_INDICATOR_PIN, isOn ? HIGH : LOW);
-  }
-
   void toggleNetworkIndicator() {
-    setNetworkIndicator(!networkIndicatorState);
+    digitalWrite(NETWORK_INDICATOR_PIN, !digitalRead(NETWORK_INDICATOR_PIN));
   }
 
   void winkNetworkIndicator() {
-    if (!networkIndicatorState || winkPending) return;
+    if (indicatorState != NET_ONLINE || winkPending) return;
     winkPending = true;
     winkEndTime = millis() + 100;
     digitalWrite(NETWORK_INDICATOR_PIN, LOW);
@@ -174,17 +174,30 @@ namespace Hardware {
     }
 
     // 2. Process Connection Indicator
-    if (!Connection::isConnected() || !Cloud::isConnected()) {
-      winkPending = false;  // Cancel any active wink before changing indicator state
-      if (networkIndicatorState) setNetworkIndicator(false); // Turn OFF if disconnected
-    } else {
-      if (!networkIndicatorState) setNetworkIndicator(true); // Turn ON if both connected
+    IndicatorState desired;
+    if      (!Connection::isConnected()) desired = NET_DISCONNECTED;
+    else if (!Cloud::isConnected())      desired = NET_NO_INTERNET;
+    else                                 desired = NET_ONLINE;
+
+    // Solid states
+    if (desired != indicatorState) {
+      winkPending = false;
+      indicatorState = desired;
+      if (indicatorState == NET_DISCONNECTED) digitalWrite(NETWORK_INDICATOR_PIN, LOW);
+      if (indicatorState == NET_ONLINE)  digitalWrite(NETWORK_INDICATOR_PIN, HIGH);
     }
 
-    // 3. Restore LED after wink window expires
+    // Double pulse
+    if (indicatorState == NET_NO_INTERNET) {
+      winkPending = false;
+      uint8_t phase = (currentMillis / 100) % 12;
+      digitalWrite(NETWORK_INDICATOR_PIN, (phase == 0 || phase == 2) ? HIGH : LOW);
+    }
+
+    // Restore wink
     if (winkPending && currentMillis >= winkEndTime) {
       winkPending = false;
-      if (networkIndicatorState) {
+      if (indicatorState == NET_ONLINE) {
         digitalWrite(NETWORK_INDICATOR_PIN, HIGH);
       }
     }
@@ -477,5 +490,5 @@ void loop() {
   Connection::keepAlive();
 
   // Yields the CPU to background tasks and lowers heat
-  delay(100);
+  delay(20);
 }
