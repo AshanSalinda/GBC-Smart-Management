@@ -154,7 +154,7 @@ export default function Bookings() {
   const [editingBooking, setEditingBooking] = useState(null);
   const [showTimeline, setShowTimeline] = useState(false);
   const [selectedDate, setSelectedDate] = useState(todayStr);
-  const [historicalTimeline, setHistoricalTimeline] = useState([]);
+  const [fetchedTimeline, setFetchedTimeline] = useState([]);
   const [isFetchingTimeline, setIsFetchingTimeline] = useState(false);
 
   const isTodaySelected = selectedDate === todayStr;
@@ -180,11 +180,11 @@ export default function Bookings() {
         const { getTimelineByDate } = await import('../api/bookings');
         const data = await getTimelineByDate(selectedDate);
         if (isMounted) {
-          setHistoricalTimeline(data || []);
+          setFetchedTimeline(data || []);
         }
       } catch (err) {
         console.error('Failed to fetch timeline:', err);
-        if (isMounted) setHistoricalTimeline([]);
+        if (isMounted) setFetchedTimeline([]);
       } finally {
         if (isMounted) setIsFetchingTimeline(false);
       }
@@ -195,7 +195,7 @@ export default function Bookings() {
   }, [selectedDate, isTodaySelected]);
 
   // Determine which timeline to use
-  const activeRawTimeline = isTodaySelected ? rawTimeline : historicalTimeline;
+  const activeRawTimeline = isTodaySelected ? rawTimeline : fetchedTimeline;
 
   // Map backend timeline to UI shape
   const timelineBookings = React.useMemo(() => {
