@@ -4,6 +4,27 @@ import { listUsers, setRole, deleteUser } from '../api/users';
 import { getConfig, updateConfig } from '../api/configs';
 
 // --- User Management Component ---
+
+// Firebase UserMetadata timestamps are Unix milliseconds (int64).
+// 0 means the field is unavailable — show a fallback instead of "Invalid Date".
+const formatUnixMs = (ms) => {
+  if (!ms) return '—';
+  return new Date(ms).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
+const formatUnixMsRelative = (ms) => {
+  if (!ms) return '—';
+  const diff = Date.now() - ms;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -66,6 +87,7 @@ const UserManagement = () => {
             <tr className="border-b border-white/10 bg-white/5">
               <th className="p-4 font-semibold text-text-dim text-sm uppercase tracking-wider w-full">User</th>
               <th className="p-4 font-semibold text-text-dim text-sm uppercase tracking-wider text-center whitespace-nowrap">Joined</th>
+              <th className="p-4 font-semibold text-text-dim text-sm uppercase tracking-wider text-center whitespace-nowrap">Last Active</th>
               <th className="p-4 font-semibold text-text-dim text-sm uppercase tracking-wider text-center whitespace-nowrap">Role Access</th>
               <th className="p-4 font-semibold text-text-dim text-sm uppercase tracking-wider text-center whitespace-nowrap">Actions</th>
             </tr>
@@ -89,7 +111,13 @@ const UserManagement = () => {
                   </div>
                 </td>
                 <td className="p-4 text-center text-sm text-white/70 whitespace-nowrap">
-                  {new Date(user.creationTime).toLocaleDateString()}
+                  {formatUnixMs(user.creationTime)}
+                </td>
+                <td className="p-4 text-center text-sm whitespace-nowrap">
+                  <span title={user.lastSignInTime ? `Last active: ${new Date(user.lastSignInTime).toLocaleString()}` : 'Never'}
+                    className="text-white/50 hover:text-white/80 transition-colors cursor-default">
+                    {formatUnixMsRelative(user.lastSignInTime)}
+                  </span>
                 </td>
                 <td className="p-4 text-center">
                   <div className="flex items-center justify-center gap-2">
@@ -136,7 +164,7 @@ const UserManagement = () => {
             ))}
             {users.length === 0 && (
               <tr>
-                <td colSpan="4" className="p-8 text-center text-text-dim">No users found.</td>
+                <td colSpan="5" className="p-8 text-center text-text-dim">No users found.</td>
               </tr>
             )}
           </tbody>
