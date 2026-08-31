@@ -81,10 +81,11 @@ function HeaderClock({ isConnected }) {
 const tablePropsAreEqual = (prevProps, nextProps) => {
   const prev = prevProps.table;
   const next = nextProps.table;
-  
+
   return (
     prev.status === next.status &&
-    prev.currentBooking?.id === next.currentBooking?.id &&
+    prev.currentBooking?.bookingId === next.currentBooking?.bookingId &&  // fix: backend field is "bookingId" not "id"
+    prev.currentBooking?.checkInTime === next.currentBooking?.checkInTime &&
     prev.currentBooking?.checkOutTime === next.currentBooking?.checkOutTime
   );
 };
@@ -106,7 +107,7 @@ const TableCard = React.memo(({ table, previousStatesRef }) => {
   const isBusy = table.status === 'BUSY';
   const tableId = table.tableId;
   const tableName = table.tableName || `T${tableId}`;
-  
+
   const startTime = isBusy && table.currentBooking?.checkInTime ? new Date(table.currentBooking.checkInTime).getTime() : 0;
   const endTime = isBusy && table.currentBooking?.checkOutTime ? new Date(table.currentBooking.checkOutTime).getTime() : 0;
   const duration = isBusy ? endTime - startTime : 0;
