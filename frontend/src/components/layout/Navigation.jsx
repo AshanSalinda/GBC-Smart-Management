@@ -9,7 +9,7 @@ export default function Navigation() {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    // { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Bookings', path: '/bookings', icon: CalendarDays },
     { name: 'Illumination', path: '/illumination', icon: Lightbulb },
     { name: 'TV Display', path: '/tv-display', icon: TvMinimal },

@@ -18,10 +18,12 @@ export default function TopHeader() {
   return (
     <header className="sticky top-0 z-40 bg-[#151517] border-b border-border-light px-4 md:px-6 py-3 flex items-center justify-between shadow-xl">
       <div className="flex items-center gap-3 font-display font-bold text-lg tracking-tight">
-        <div className="w-9 h-9 bg-gradient-to-br from-accent-bright to-accent-dim rounded-[10px] flex items-center justify-center text-lg shadow-accent">
-          B
-        </div>
-        <span className="hidden sm:inline">Billiard Station</span>
+        <img 
+          src="/logo.jpg" 
+          alt="GBC Logo" 
+          className="w-9 h-9 object-cover rounded-[10px] shadow-accent"
+        />
+        <span className="hidden sm:inline">Galle Billiards Club</span>
       </div>
       <div className="flex items-center gap-3 md:gap-4 text-sm text-text-muted">
         <div className="bg-accent/15 text-accent-bright px-3 py-1 rounded-full font-semibold text-[10px] md:text-xs tracking-wider border border-accent/25 uppercase">

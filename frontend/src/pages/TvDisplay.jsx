@@ -51,9 +51,11 @@ function HeaderClock({ isConnected }) {
   return (
     <header className="px-4 py-4 md:px-[4vw] md:py-[2vh] flex items-center justify-between border-b border-white/5 bg-black backdrop-blur-md flex-shrink-0 z-20 shadow-lg">
       <div className="flex items-center gap-3 md:gap-[1vw]">
-        <div className="w-8 h-8 md:w-[6vh] md:h-[6vh] bg-accent text-bg font-display font-bold text-xs md:text-lg md:text-[2.2vh] flex items-center justify-center rounded-xl md:rounded-[1.5vh] shadow-[0_0_2vh_rgba(74,188,109,0.2)]">
-          GBC
-        </div>
+        <img 
+          src="/logo.jpg" 
+          alt="GBC Logo" 
+          className="w-10 h-10 md:w-[8vh] md:h-[8vh] object-cover rounded-xl md:rounded-[1.5vh] shadow-[0_0_2vh_rgba(255,255,255,0.1)]"
+        />
         <div>
           <h1 className="text-lg md:text-[3.5vh] font-display font-bold text-white leading-none">Galle Billiards Club</h1>
           <p className="text-text-dim text-[0.5rem] md:text-[1.2vh] tracking-widest uppercase font-semibold mt-1 md:mt-[0.5vh]">Live Status Board</p>

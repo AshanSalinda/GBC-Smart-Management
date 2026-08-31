@@ -53,8 +53,12 @@ export default function Login() {
 
           {/* Logo / Branding */}
           <div className="mb-10 text-center flex flex-col items-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-accent-bright to-accent rounded-2xl flex items-center justify-center shadow-[0_0_40px_rgba(74,188,109,0.3)] mb-6 transform transition-transform hover:scale-105">
-              <span className="text-3xl font-display font-black text-[#151517]">B</span>
+            <div className="w-20 h-20 bg-[#151517]/80 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.05)] mb-6 border border-white/10 p-2 transform transition-transform hover:scale-105">
+              <img 
+                src="/logo.jpg" 
+                alt="GBC Logo" 
+                className="w-full h-full object-contain rounded-xl mix-blend-screen"
+              />
             </div>
             <h1 className="text-3xl font-display font-black text-white tracking-tight mb-2">
               Welcome back
