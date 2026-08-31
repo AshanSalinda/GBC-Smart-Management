@@ -155,7 +155,8 @@ export default function CreateBookingModal({ isOpen, onClose, slot, existingBook
     if (existingBooking) {
       // Edit Mode: Check for overlaps against other bookings
       const overlappingBooking = tableBookings.find(b => {
-        if (b.id === existingBooking.id) return false;
+        // Skip the booking being edited
+        if (b.bookingId === existingBooking.bookingId) return false;
         const bStart = b.startTime;
         const bEnd = b.startTime + b.duration;
         // Overlap condition: newStart < bEnd AND newEnd > bStart
