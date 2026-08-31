@@ -1,12 +1,12 @@
-import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home } from 'lucide-react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { Home } from 'lucide-react';
+import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 
 export default function PendingApproval() {
-  const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const email = location.state?.email;
 
-  if (!user) {
+  if (!email) {
     return <Navigate to="/" replace />;
   }
 
@@ -33,7 +33,9 @@ export default function PendingApproval() {
               Account Pending
             </h1>
             <p className="text-text-dim text-sm font-medium tracking-wide leading-relaxed">
-              You have successfully joined the Galle Billiards Club using the Google account <strong className="text-white opacity-90">{user?.email}</strong>. However, an administrator must assign you privileges before you can access the system.
+              <span>You have successfully joined the Galle Billiards Club using the Google account</span><br />
+              <strong className="text-white opacity-90">{email}</strong><br />
+              <span>However, an administrator must assign you privileges before you can access the system.</span>
             </p>
           </div>
 
@@ -45,15 +47,6 @@ export default function PendingApproval() {
               <Home className="w-5 h-5 text-accent group-hover:text-accent-bright transition-colors" />
               <span className="font-semibold text-accent group-hover:text-accent-bright tracking-wide transition-colors">
                 Return to Home
-              </span>
-            </button>
-            <button
-              onClick={logout}
-              className="group relative w-full flex items-center justify-center gap-3 px-6 py-4 bg-white/5 hover:bg-white/10 active:bg-white/5 border border-white/10 rounded-2xl transition-all duration-300 shadow-lg"
-            >
-              <LogOut className="w-5 h-5 text-text-dim group-hover:text-white transition-colors" />
-              <span className="font-semibold text-text-dim group-hover:text-white tracking-wide transition-colors">
-                Sign Out
               </span>
             </button>
           </div>

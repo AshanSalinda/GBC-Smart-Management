@@ -3,13 +3,16 @@ import { LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function TopHeader() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   
-  const handleLogout = () => {
-    // This will be connected to Firebase Auth later
-    // For now, redirect to login
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Failed to log out', error);
+    }
   };
 
   return (

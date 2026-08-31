@@ -33,14 +33,17 @@ const tablePropsAreEqual = (prevProps, nextProps) => {
   return (
     prev.status === next.status &&
     prev.lightStatus === next.lightStatus &&
-    prev.currentBooking?.bookingId === next.currentBooking?.bookingId
+    prev.currentBooking?.bookingId === next.currentBooking?.bookingId &&
+    prevProps.localPendingState === nextProps.localPendingState
   );
 };
 
-const TableCard = React.memo(({ table, onToggle }) => {
+const TableCard = React.memo(({ table, localPendingState, onToggle }) => {
   const isBusy = table.status === 'BUSY';
-  const isOn = table.lightStatus === 'ON' || table.lightStatus === 'PENDING-ON';
-  const isPending = table.lightStatus === 'PENDING-ON' || table.lightStatus === 'PENDING-OFF';
+
+  const effectiveLightStatus = localPendingState || table.lightStatus;
+  const isOn = effectiveLightStatus === 'ON' || effectiveLightStatus === 'PENDING-ON';
+  const isPending = effectiveLightStatus === 'PENDING-ON' || effectiveLightStatus === 'PENDING-OFF';
 
   return (
     <div
@@ -130,29 +133,53 @@ const TableCard = React.memo(({ table, onToggle }) => {
 }, tablePropsAreEqual);
 
 // -----------------------------------------------------------------------------
-// Main Illumination View
-// -----------------------------------------------------------------------------
+import { useState } from 'react';
+
 export default function Illumination() {
   const tables = useStore(state => state.tables);
+  const [pendingActions, setPendingActions] = useState({});
 
   const toggleLight = useCallback(async (tableId, currentLightStatus) => {
     // Determine the target state opposite of current
     const targetState = currentLightStatus === 'ON' || currentLightStatus === 'PENDING-ON' ? 'OFF' : 'ON';
+    const pendingState = targetState === 'ON' ? 'PENDING-ON' : 'PENDING-OFF';
+
+    setPendingActions(prev => ({ ...prev, [tableId]: pendingState }));
 
     try {
       await toggleLightApi(tableId, targetState);
     } catch (error) {
       console.error("Failed to toggle light:", error);
+    } finally {
+      setPendingActions(prev => {
+        const next = { ...prev };
+        delete next[tableId];
+        return next;
+      });
     }
   }, []);
 
   const toggleAllLights = useCallback(async (targetState) => {
+    const pendingState = targetState === 'ON' ? 'PENDING-ON' : 'PENDING-OFF';
+
+    setPendingActions(prev => {
+      const next = { ...prev };
+      tables.forEach(t => { next[t.tableId] = pendingState; });
+      return next;
+    });
+
     try {
       await toggleLightApi('ALL', targetState);
     } catch (error) {
       console.error(`Failed to turn all lights ${targetState.toLowerCase()}:`, error);
+    } finally {
+      setPendingActions(prev => {
+        const next = { ...prev };
+        tables.forEach(t => delete next[t.tableId]);
+        return next;
+      });
     }
-  }, []);
+  }, [tables]);
 
   const isAllOn = tables.length > 0 && tables.every(t => t.lightStatus === 'ON' || t.lightStatus === 'PENDING-ON');
   const isAllOff = tables.length > 0 && tables.every(t => t.lightStatus === 'OFF' || t.lightStatus === 'PENDING-OFF');
@@ -204,7 +231,12 @@ export default function Illumination() {
       <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-4 gap-6">
         {tables.length > 0 ? (
           tables.map((table) => (
-            <TableCard key={table.tableId} table={table} onToggle={toggleLight} />
+            <TableCard
+              key={table.tableId}
+              table={table}
+              localPendingState={pendingActions[table.tableId]}
+              onToggle={toggleLight}
+            />
           ))
         ) : (
           <div className="col-span-full flex flex-col items-center justify-center text-white/50 py-20 gap-4">
