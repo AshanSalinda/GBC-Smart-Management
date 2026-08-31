@@ -1,28 +1,68 @@
 // Package timeutil provides venue-aware operational day boundary calculations.
-// The GBC venue operates on a non-calendar day: from venueStartTime to 06:00 the next day.
+//
+// The GBC venue operates on a non-calendar day that spans midnight:
+// it begins at venueStartTime (local venue time) and closes the following morning at 06:00 local time.
+//
+// All boundaries are computed in the venue's local timezone (VENUE_TIMEZONE env var,
+// defaults to "Asia/Colombo") and then returned as UTC time.Time values so that
+// MongoDB range queries and Go time comparisons work correctly regardless of
+// where the server binary is deployed.
 package timeutil
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
-// DayBounds holds the inclusive start and exclusive end of one operational day.
+// DayBounds holds the inclusive start and exclusive end of one operational day,
+// expressed in UTC so they are safe to use in MongoDB queries and time.Before/After calls.
 type DayBounds struct {
-	Start time.Time
-	End   time.Time
+	Start time.Time // venueStartTime on dateStr, in venue local tz → UTC
+	End   time.Time // 06:00 the following calendar day, in venue local tz → UTC
 }
 
-// GetOperationalDayBounds returns the start and end of an operational day for the given date.
+// venueLocation is lazily loaded from the VENUE_TIMEZONE environment variable.
+// All access is guarded by locationOnce so it is goroutine-safe.
+var (
+	locationOnce sync.Once
+	venueLocation *time.Location
+)
+
+// VenueLocation returns the venue's *time.Location.
+// It reads VENUE_TIMEZONE once and caches the result for the lifetime of the process.
+// Falls back to "Asia/Colombo" if the variable is unset or invalid.
+func VenueLocation() *time.Location {
+	locationOnce.Do(func() {
+		tz := os.Getenv("VENUE_TIMEZONE")
+		if tz == "" {
+			tz = "Asia/Colombo"
+		}
+		loc, err := time.LoadLocation(tz)
+		if err != nil {
+			// Warn loudly and fall back so the server still starts.
+			fmt.Printf("[timeutil] WARNING: invalid VENUE_TIMEZONE %q (%v) — falling back to Asia/Colombo\n", tz, err)
+			loc, _ = time.LoadLocation("Asia/Colombo")
+		}
+		venueLocation = loc
+	})
+	return venueLocation
+}
+
+// GetOperationalDayBounds returns the UTC start and end of an operational day for the given date.
 //
-// The operational day starts at venueStartTime (e.g. "09:00" UTC) on dateStr
-// and ends at 06:00 UTC the following calendar day.
+// The "date" (dateStr) is interpreted as a venue-local calendar date.
+// The operational window is: [venueStartTime on dateStr] → [06:00 on dateStr+1].
+// Both bounds are constructed in the venue's local timezone and then stored as UTC.
 //
 // dateStr may be a bare "YYYY-MM-DD" or a full ISO 8601 string (only the date part is used).
-// venueStartTime must be in "HH:MM" format.
+// venueStartTime must be in "HH:MM" format (venue local time).
 func GetOperationalDayBounds(dateStr, venueStartTime string) (DayBounds, error) {
+	loc := VenueLocation()
+
 	// Use only the date portion
 	dateOnly := dateStr
 	if len(dateStr) > 10 {
@@ -40,7 +80,7 @@ func GetOperationalDayBounds(dateStr, venueStartTime string) (DayBounds, error) 
 		return DayBounds{}, fmt.Errorf("timeutil: non-numeric date components in %q", dateStr)
 	}
 
-	// Parse venue start time
+	// Parse venue start time (venue local)
 	tparts := strings.Split(venueStartTime, ":")
 	if len(tparts) < 2 {
 		tparts = []string{"09", "00"}
@@ -48,14 +88,16 @@ func GetOperationalDayBounds(dateStr, venueStartTime string) (DayBounds, error) 
 	startHour, _ := strconv.Atoi(tparts[0])
 	startMin, _ := strconv.Atoi(tparts[1])
 
-	start := time.Date(year, time.Month(month), day, startHour, startMin, 0, 0, time.UTC)
-	// Operational day ends at 06:00 the next calendar day
-	end := time.Date(year, time.Month(month), day+1, 6, 0, 0, 0, time.UTC)
+	// Construct bounds in venue local time — Go converts to UTC internally.
+	start := time.Date(year, time.Month(month), day, startHour, startMin, 0, 0, loc)
+	// Operational day ends at 06:00 local time the following calendar day.
+	end := time.Date(year, time.Month(month), day+1, 6, 0, 0, 0, loc)
 
-	return DayBounds{Start: start, End: end}, nil
+	return DayBounds{Start: start.UTC(), End: end.UTC()}, nil
 }
 
-// TodayString returns the current UTC date as "YYYY-MM-DD".
-func TodayString() string {
-	return time.Now().UTC().Format("2006-01-02")
+// TodayVenueString returns the current date string ("YYYY-MM-DD") in the venue's local timezone.
+// Always use this instead of time.Now().UTC().Format(...) when you need the venue's "today".
+func TodayVenueString() string {
+	return time.Now().In(VenueLocation()).Format("2006-01-02")
 }
