@@ -157,4 +157,5 @@ type TableCoordinator interface {
 // TimelineProvider is the narrow interface the WS hub uses to fetch today's timeline.
 type TimelineProvider interface {
 	GetTimeline(dateStr string) ([]Booking, error)
+	GetTodayTimeline() ([]Booking, error)
 }
