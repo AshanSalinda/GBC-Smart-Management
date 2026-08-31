@@ -144,18 +144,62 @@ const TableSummaryCard = React.memo(({ table }) => {
 // Main Component
 // -----------------------------------------------------------------------------
 export default function Bookings() {
-  const tables = useStore(state => state.tables);
-  const rawTimeline = useStore(state => state.timeline) || [];
-  const globalConfig = useStore(state => state.globalConfig);
-  const setGlobalConfig = useStore(state => state.setGlobalConfig);
+  const todayStr = React.useMemo(() => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().split('T')[0];
+  }, []);
 
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [editingBooking, setEditingBooking] = useState(null);
   const [showTimeline, setShowTimeline] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(todayStr);
+  const [fetchedTimeline, setFetchedTimeline] = useState([]);
+  const [isFetchingTimeline, setIsFetchingTimeline] = useState(false);
+
+  const isTodaySelected = selectedDate === todayStr;
+
+  // Conditionally subscribe to store timeline ONLY when viewing today.
+  // This prevents unnecessary re-renders when historical dates are selected but the live timeline updates.
+  const rawTimeline = useStore(state => isTodaySelected ? state.timeline : null);
+  const tables = useStore(state => state.tables);
+  const globalConfig = useStore(state => state.globalConfig);
+  const setGlobalConfig = useStore(state => state.setGlobalConfig);
+
+
+
+  useEffect(() => {
+    if (isTodaySelected) {
+      return;
+    }
+
+    let isMounted = true;
+    const fetchTimeline = async () => {
+      setIsFetchingTimeline(true);
+      try {
+        const { getTimelineByDate } = await import('../api/bookings');
+        const data = await getTimelineByDate(selectedDate);
+        if (isMounted) {
+          setFetchedTimeline(data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch timeline:', err);
+        if (isMounted) setFetchedTimeline([]);
+      } finally {
+        if (isMounted) setIsFetchingTimeline(false);
+      }
+    };
+    fetchTimeline();
+
+    return () => { isMounted = false; };
+  }, [selectedDate, isTodaySelected]);
+
+  // Determine which timeline to use
+  const activeRawTimeline = isTodaySelected ? rawTimeline : fetchedTimeline;
 
   // Map backend timeline to UI shape
   const timelineBookings = React.useMemo(() => {
-    return rawTimeline.map(b => ({
+    return activeRawTimeline.map(b => ({
       bookingId: b.id,
       tableId: b.tableId,
       player: b.bookerName || 'Unknown',
@@ -165,7 +209,7 @@ export default function Bookings() {
       amount: b.amount || 0,
       paid: !!b.isPaid
     }));
-  }, [rawTimeline]);
+  }, [activeRawTimeline]);
 
   // Fetch Global Config once on mount
   useEffect(() => {
@@ -250,13 +294,15 @@ export default function Bookings() {
       </div>
 
       {/* Interactive Booking Timeline */}
-      {showTimeline ? (
+      {showTimeline && !isFetchingTimeline ? (
         <BookingTimeline
           tables={tables.length > 0 ? tables : [{ tableId: 1 }, { tableId: 2 }, { tableId: 3 }, { tableId: 4 }]} // Fallback for timeline layout structure mapping
           bookings={timelineBookings}
           onSlotClick={setSelectedSlot}
           onEditBooking={setEditingBooking}
           globalConfig={globalConfig}
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
         />
       ) : (
         <div className="h-[400px] w-full rounded-[16px] border border-[#2a2a2e] flex flex-col items-center justify-center bg-[#151517] shadow-xl mt-4 animate-pulse">

@@ -13,7 +13,7 @@ export default function Navigation() {
     { name: 'Bookings', path: '/bookings', icon: CalendarDays },
     { name: 'Illumination', path: '/illumination', icon: Lightbulb },
     { name: 'TV Display', path: '/tv-display', icon: TvMinimal },
-    { name: 'Hardware', path: '/health', icon: Cpu },
+    { name: 'Hardware', path: '/hardware', icon: Cpu },
     ...(isAdmin ? [{ name: 'Admin', path: '/admin', icon: Users }] : []),
   ];
 

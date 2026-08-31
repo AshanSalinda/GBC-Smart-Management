@@ -1,22 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Navigate } from 'react-router-dom';
-import { LogIn, Loader2, Home } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Loader2, Home } from 'lucide-react';
 
 export default function Login() {
-  const { user, loginWithGoogle } = useAuth();
+  const { user, loginWithGoogle, logout } = useAuth();
   const navigate = useNavigate();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState('');
 
   // If already logged in, redirect them based on their role
-  if (user) {
-    if (user.role === 'admin') return <Navigate to="/dashboard" replace />;
-    if (user.role === 'staff') return <Navigate to="/bookings" replace />;
-    if (user.role === 'tv') return <Navigate to="/tv-display" replace />;
-    // If they have no role, they need admin approval
-    return <Navigate to="/pending-approval" replace />;
-  }
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') navigate('/dashboard', { replace: true });
+      else if (user.role === 'staff') navigate('/bookings', { replace: true });
+      else if (user.role === 'tv') navigate('/tv-display', { replace: true });
+      else {
+        const email = user.email;
+        logout().then(() => {
+          navigate('/pending-approval', { replace: true, state: { email } });
+        });
+      }
+    }
+  }, [user, navigate, logout]);
 
   const handleGoogleLogin = async () => {
     try {

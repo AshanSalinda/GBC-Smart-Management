@@ -312,20 +312,24 @@ export default function Admin() {
 
   return (
     <div className="max-w-[1200px] mx-auto min-h-screen pb-20 animate-in fade-in duration-300">
-      <div className="mb-10">
-        <h1 className="text-4xl md:text-5xl font-display font-black tracking-tight text-white mb-2 drop-shadow-sm">
-          Admin Controls
-        </h1>
-        <p className="text-text-dim text-sm md:text-base font-medium tracking-wide">
-          Manage system access and global club settings.
-        </p>
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/5">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-4xl font-semibold tracking-tight text-white">
+              Admin Controls
+            </h1>
+          </div>
+          <p className="text-text-dim text-sm">
+            Manage system access and global club settings.
+          </p>
+        </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-4">
+      <div className="flex items-center justify-center md:justify-start gap-2 md:gap-4 mb-8 overflow-x-auto hide-scrollbar w-full">
         <button
           onClick={() => setActiveTab('users')}
-          className={`flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${activeTab === 'users'
+          className={`flex shrink-0 items-center gap-1.5 px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold transition-all ${activeTab === 'users'
             ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)]'
             : 'text-text-dim hover:bg-white/5'
             }`}
@@ -334,7 +338,7 @@ export default function Admin() {
         </button>
         <button
           onClick={() => setActiveTab('config')}
-          className={`flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${activeTab === 'config'
+          className={`flex shrink-0 items-center gap-1.5 px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold transition-all ${activeTab === 'config'
             ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)]'
             : 'text-text-dim hover:bg-white/5'
             }`}
