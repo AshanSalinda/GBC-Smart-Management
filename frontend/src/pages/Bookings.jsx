@@ -38,7 +38,7 @@ const tablePropsAreEqual = (prevProps, nextProps) => {
 
   return (
     prev.status === next.status &&
-    prev.currentBooking?.id === next.currentBooking?.id &&
+    prev.currentBooking?.bookingId === next.currentBooking?.bookingId &&
     prev.currentBooking?.isPaid === next.currentBooking?.isPaid &&
     prev.currentBooking?.amount === next.currentBooking?.amount
   );

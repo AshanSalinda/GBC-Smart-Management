@@ -84,7 +84,7 @@ const tablePropsAreEqual = (prevProps, nextProps) => {
 
   return (
     prev.status === next.status &&
-    prev.currentBooking?.bookingId === next.currentBooking?.bookingId &&  // fix: backend field is "bookingId" not "id"
+    prev.currentBooking?.bookingId === next.currentBooking?.bookingId &&
     prev.currentBooking?.checkInTime === next.currentBooking?.checkInTime &&
     prev.currentBooking?.checkOutTime === next.currentBooking?.checkOutTime
   );
