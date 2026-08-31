@@ -88,9 +88,16 @@ namespace Hardware {
 
   TableState tables[4];
   AckCallback_t onStateChanged = nullptr;
+  enum IndicatorState : uint8_t { 
+    NET_DISCONNECTED,
+    NET_NO_INTERNET,
+    NET_ONLINE
+  };
 
   const uint8_t NETWORK_INDICATOR_PIN = 27;
-  bool networkIndicatorState = false;
+  IndicatorState indicatorState = NET_DISCONNECTED;
+  bool winkPending = false;
+  unsigned long winkEndTime = 0;
 
   void begin(AckCallback_t ackCallback) {
     onStateChanged = ackCallback;
@@ -107,7 +114,7 @@ namespace Hardware {
     }
 
     pinMode(NETWORK_INDICATOR_PIN, OUTPUT);
-    digitalWrite(NETWORK_INDICATOR_PIN, LOW);
+    digitalWrite(NETWORK_INDICATOR_PIN, HIGH);
   }
 
   void setImmediate(int id, bool isOn) {
@@ -136,13 +143,15 @@ namespace Hardware {
     }
   }
 
-  void setNetworkIndicator(bool isOn) {
-    networkIndicatorState = isOn;
-    digitalWrite(NETWORK_INDICATOR_PIN, isOn ? HIGH : LOW);
+  void toggleNetworkIndicator() {
+    digitalWrite(NETWORK_INDICATOR_PIN, !digitalRead(NETWORK_INDICATOR_PIN));
   }
 
-  void toggleNetworkIndicator() {
-    setNetworkIndicator(!networkIndicatorState);
+  void winkNetworkIndicator() {
+    if (indicatorState != NET_ONLINE || winkPending) return;
+    winkPending = true;
+    winkEndTime = millis() + 100;
+    digitalWrite(NETWORK_INDICATOR_PIN, HIGH);
   }
 
   void update() {
@@ -165,10 +174,32 @@ namespace Hardware {
     }
 
     // 2. Process Connection Indicator
-    if (!Connection::isConnected() || !Cloud::isConnected()) {
-      if (!networkIndicatorState) setNetworkIndicator(true); // Turn ON if either disconnected
-    } else {
-      if (networkIndicatorState) setNetworkIndicator(false); // Turn OFF if both connected
+    IndicatorState desired;
+    if      (!Connection::isConnected()) desired = NET_DISCONNECTED;
+    else if (!Cloud::isConnected())      desired = NET_NO_INTERNET;
+    else                                 desired = NET_ONLINE;
+
+    // Solid states
+    if (desired != indicatorState) {
+      winkPending = false;
+      indicatorState = desired;
+      if (indicatorState == NET_DISCONNECTED) digitalWrite(NETWORK_INDICATOR_PIN, HIGH);
+      if (indicatorState == NET_ONLINE)       digitalWrite(NETWORK_INDICATOR_PIN, LOW);
+    }
+
+    // Double pulse
+    if (indicatorState == NET_NO_INTERNET) {
+      winkPending = false;
+      uint8_t phase = (currentMillis / 100) % 12;
+      digitalWrite(NETWORK_INDICATOR_PIN, (phase == 0 || phase == 2) ? HIGH : LOW);
+    }
+
+    // Restore wink
+    if (winkPending && currentMillis >= winkEndTime) {
+      winkPending = false;
+      if (indicatorState == NET_ONLINE) {
+        digitalWrite(NETWORK_INDICATOR_PIN, LOW);
+      }
     }
   }
 
@@ -338,6 +369,8 @@ namespace Cloud {
           if (!lState || strcmp(lState, "null") == 0) break;
           bool isOn = (strcmp(lState, "ON") == 0);
 
+          Hardware::winkNetworkIndicator();
+
           // Check if tableId is the string "ALL" or an integer
           if (doc["tableId"].is<const char*>() && strcmp(doc["tableId"].as<const char*>(), "ALL") == 0) {
             LOG_PRINTLN("[MQTT] ALL table command received.");
@@ -378,6 +411,7 @@ namespace Cloud {
 
     mqtt_cfg.session.keepalive = 30;
     mqtt_cfg.session.disable_clean_session = false;
+    mqtt_cfg.network.timeout_ms = 30000;
 
     mqtt_cfg.buffer.size = 2048; 
     mqtt_cfg.session.last_will.topic = "gbc/hardware/status";
@@ -422,7 +456,7 @@ namespace Cloud {
     doc["commandId"] = commandId;
     doc["deviceName"] = DEVICE_NAME;
     doc["mac"] = WiFi.macAddress();
-    doc["uptime"] = millis();
+    doc["uptime"] = esp_timer_get_time() / 1000000ULL;
     doc["freeHeap"] = ESP.getFreeHeap();
     doc["heapSize"] = ESP.getHeapSize();
     doc["temperature"] = temperatureRead();
@@ -456,5 +490,5 @@ void loop() {
   Connection::keepAlive();
 
   // Yields the CPU to background tasks and lowers heat
-  delay(100);
+  delay(20);
 }
