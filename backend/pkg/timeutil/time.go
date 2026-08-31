@@ -75,8 +75,8 @@ func VenueLocation() *time.Location {
 // Both bounds are constructed in the venue's local timezone and then stored as UTC.
 //
 // dateStr may be a bare "YYYY-MM-DD" or a full ISO 8601 string (only the date part is used).
-// venueStartTime must be in "HH:MM" format (venue local time).
-func GetOperationalDayBounds(dateStr, venueStartTime string) (DayBounds, error) {
+// venueStartTime and venueCloseTime must be in "HH:MM" format (venue local time).
+func GetOperationalDayBounds(dateStr, venueStartTime, venueCloseTime string) (DayBounds, error) {
 	loc := VenueLocation()
 
 	// Use only the date portion
@@ -104,16 +104,36 @@ func GetOperationalDayBounds(dateStr, venueStartTime string) (DayBounds, error) 
 	startHour, _ := strconv.Atoi(tparts[0])
 	startMin, _ := strconv.Atoi(tparts[1])
 
+	// Parse venue close time (venue local)
+	cparts := strings.Split(venueCloseTime, ":")
+	if len(cparts) < 2 {
+		cparts = []string{"06", "00"}
+	}
+	closeHour, _ := strconv.Atoi(cparts[0])
+	closeMin, _ := strconv.Atoi(cparts[1])
+
 	// Construct bounds in venue local time — Go converts to UTC internally.
 	start := time.Date(year, time.Month(month), day, startHour, startMin, 0, 0, loc)
-	// Operational day ends at 06:00 local time the following calendar day.
-	end := time.Date(year, time.Month(month), day+1, 6, 0, 0, 0, loc)
+	// Operational day ends at venueCloseTime the following calendar day.
+	end := time.Date(year, time.Month(month), day+1, closeHour, closeMin, 0, 0, loc)
 
 	return DayBounds{Start: start.UTC(), End: end.UTC()}, nil
 }
 
-// TodayVenueString returns the current date string ("YYYY-MM-DD") in the venue's local timezone.
-// Always use this instead of time.Now().UTC().Format(...) when you need the venue's "today".
-func TodayVenueString() string {
-	return time.Now().In(VenueLocation()).Format("2006-01-02")
+// TodayVenueString returns the current operational date string ("YYYY-MM-DD") for the venue.
+// We subtract the closing hours and minutes from the current local time so the date
+// naturally rolls over exactly at the venue's closing time.
+func TodayVenueString(venueCloseTime string) string {
+	cparts := strings.Split(venueCloseTime, ":")
+	if len(cparts) < 2 {
+		cparts = []string{"06", "00"}
+	}
+	closeHour, _ := strconv.Atoi(cparts[0])
+	closeMin, _ := strconv.Atoi(cparts[1])
+
+	now := time.Now().In(VenueLocation())
+	// Subtract the close time so that anything before the close time shifts to the previous day
+	shiftDuration := time.Duration(closeHour)*time.Hour + time.Duration(closeMin)*time.Minute
+	operationalNow := now.Add(-shiftDuration)
+	return operationalNow.Format("2006-01-02")
 }
