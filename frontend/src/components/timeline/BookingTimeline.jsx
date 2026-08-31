@@ -1,19 +1,17 @@
-import { useRef, useMemo, useState, useEffect } from 'react';
+import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import TimelineRow from './TimelineRow';
 import CurrentTimeLine from './CurrentTimeLine';
 import { getTimelineHeaders, getTotalTimelineWidth, TIMELINE_CONFIG, getDynamicCloseHour } from './timelineUtils';
 
-export default function BookingTimeline({ tables, bookings = [], onSlotClick, onEditBooking, globalConfig, selectedDate, onDateChange }) {
+export default function BookingTimeline({ tables, bookings = [], onSlotClick, onEditBooking, globalConfig, selectedDate, onDateChange, today }) {
   const scrollContainerRef = useRef(null);
   const dateInputRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(Date.now());
 
-  // Get today's date in local YYYY-MM-DD format
-  const todayLocal = useMemo(() => {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().split('T')[0];
-  }, []);
+  const handleDateChange = useCallback((val) => {
+    if (!onDateChange) return;
+    onDateChange(val ? val : today);
+  }, [onDateChange, today]);
 
   // Parse Config
   const openHour = globalConfig?.venueStartTime ? parseInt(globalConfig.venueStartTime.split(':')[0], 10) : 10;
@@ -72,7 +70,7 @@ export default function BookingTimeline({ tables, bookings = [], onSlotClick, on
       {/* Top Header / Date Picker Area */}
       <div className="px-6 py-4 flex items-center justify-between border-b border-[#2a2a2e] bg-[rgba(22,22,24,0.95)] sticky top-0 z-10">
         <h2 className="text-[1.15rem] font-display font-bold text-white tracking-[-0.03em]">Schedule</h2>
-        <div 
+        <div
           onClick={() => {
             try {
               dateInputRef.current?.showPicker();
@@ -85,15 +83,16 @@ export default function BookingTimeline({ tables, bookings = [], onSlotClick, on
           <svg className="w-4 h-4 text-text-dim pointer-events-none z-10 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <input 
+          <span className="text-[0.9rem] font-medium text-white">Today</span>
+          {/* <input
             ref={dateInputRef}
             type="date"
             value={selectedDate || todayLocal}
             min={todayLocal}
-            onChange={(e) => onDateChange && onDateChange(e.target.value)}
+            onChange={(e) => handleDateChange(e.target.value)}
             onClick={(e) => e.stopPropagation()}
             className="bg-transparent text-[0.9rem] font-medium text-white outline-none z-10 relative cursor-pointer [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:hidden w-full"
-          />
+          /> */}
         </div>
       </div>
 
