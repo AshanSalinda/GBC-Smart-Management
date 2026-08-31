@@ -152,6 +152,12 @@ export default function Bookings() {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [editingBooking, setEditingBooking] = useState(null);
   const [showTimeline, setShowTimeline] = useState(false);
+  
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().split('T')[0];
+  });
 
   // Map backend timeline to UI shape
   const timelineBookings = React.useMemo(() => {
@@ -257,6 +263,8 @@ export default function Bookings() {
           onSlotClick={setSelectedSlot}
           onEditBooking={setEditingBooking}
           globalConfig={globalConfig}
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
         />
       ) : (
         <div className="h-[400px] w-full rounded-[16px] border border-[#2a2a2e] flex flex-col items-center justify-center bg-[#151517] shadow-xl mt-4 animate-pulse">
