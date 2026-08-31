@@ -23,9 +23,9 @@ const ClockIcon = () => (
   </svg>
 );
 
-const PlusIcon = () => (
+const CheckIcon = () => (
   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
   </svg>
 );
 
@@ -127,7 +127,7 @@ const TableSummaryCard = React.memo(({ table }) => {
             <div className="relative w-20 h-20 mb-5 flex items-center justify-center">
               <div className="absolute inset-0 rounded-full border-2 border-dashed border-accent/40 group-hover:border-accent/80 group-hover:rotate-90 group-active:border-accent/80 group-active:rotate-90 transition duration-700" />
               <div className="w-12 h-12 rounded-full bg-accent/10 border border-accent/20 text-accent flex items-center justify-center group-hover:scale-110 group-active:scale-110 transition-transform duration-500 shadow-lg">
-                <PlusIcon />
+                <CheckIcon />
               </div>
             </div>
             <h3 className="text-3xl font-display font-black text-white/90 tracking-tighter mb-1">{tableName}</h3>
