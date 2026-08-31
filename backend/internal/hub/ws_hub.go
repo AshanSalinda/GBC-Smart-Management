@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"gbc/backend/internal/domain"
-	"gbc/backend/pkg/timeutil"
 
 	"github.com/gofiber/websocket/v2"
 )
@@ -148,7 +147,7 @@ func (h *Hub) sendInitialState(c *Client) {
 	}
 
 	if c.info.Role == "admin" || c.info.Role == "staff" {
-		tl, err := h.timeline.GetTimeline(timeutil.TodayVenueString())
+		tl, err := h.timeline.GetTodayTimeline()
 		if err == nil {
 			payload["timeline"] = tl
 		} else {

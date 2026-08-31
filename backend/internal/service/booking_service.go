@@ -80,10 +80,12 @@ func (s *BookingService) CreateBooking(dto CreateBookingInput, createdBy, role s
 	if checkIn.Before(now) && role != "admin" {
 		cfg, _ := s.configRepo.Get()
 		venueStart := "09:00"
+		venueClose := "06:00"
 		if cfg != nil {
 			venueStart = cfg.VenueStartTime
+			venueClose = cfg.VenueCloseTime
 		}
-		bounds, _ := timeutil.GetOperationalDayBounds(now.Format("2006-01-02"), venueStart)
+		bounds, _ := timeutil.GetOperationalDayBounds(now.Format("2006-01-02"), venueStart, venueClose)
 		if checkIn.Before(bounds.Start) {
 			return nil, &ValidationError{Code: 400, Message: "staff cannot create bookings in the past outside the current operational day"}
 		}
@@ -139,18 +141,31 @@ func (s *BookingService) CreateBooking(dto CreateBookingInput, createdBy, role s
 // ─── GET TIMELINE ──────────────────────────────────────────────────────────────
 
 // GetTimeline returns all non-cancelled bookings for the operational day of dateStr.
-// Implements domain.TimelineProvider.
 func (s *BookingService) GetTimeline(dateStr string) ([]domain.Booking, error) {
 	cfg, _ := s.configRepo.Get()
 	venueStart := "09:00"
+	venueClose := "06:00"
 	if cfg != nil {
 		venueStart = cfg.VenueStartTime
+		venueClose = cfg.VenueCloseTime
 	}
-	bounds, err := timeutil.GetOperationalDayBounds(dateStr, venueStart)
+	bounds, err := timeutil.GetOperationalDayBounds(dateStr, venueStart, venueClose)
 	if err != nil {
 		return nil, fmt.Errorf("timeline bounds: %w", err)
 	}
 	return s.bookingRepo.FindTimeline(bounds.Start, bounds.End)
+}
+
+// GetTodayTimeline calculates the current operational date string based on the
+// dynamic venue close time, then returns the timeline for that day.
+// Implements domain.TimelineProvider.
+func (s *BookingService) GetTodayTimeline() ([]domain.Booking, error) {
+	cfg, _ := s.configRepo.Get()
+	venueClose := "06:00"
+	if cfg != nil {
+		venueClose = cfg.VenueCloseTime
+	}
+	return s.GetTimeline(timeutil.TodayVenueString(venueClose))
 }
 
 // ─── UPDATE ────────────────────────────────────────────────────────────────────
@@ -286,7 +301,7 @@ func (s *BookingService) CancelBooking(id string) (*domain.Booking, error) {
 // ─── Private Helpers ──────────────────────────────────────────────────────────
 
 func (s *BookingService) emitTimelineUpdate() {
-	tl, err := s.GetTimeline(timeutil.TodayVenueString())
+	tl, err := s.GetTodayTimeline()
 	if err != nil {
 		s.logger.Error("failed to fetch timeline", "err", err)
 		return
