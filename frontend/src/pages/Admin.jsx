@@ -326,10 +326,10 @@ export default function Admin() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-center justify-center md:justify-start gap-2 md:gap-4 mb-8 overflow-x-auto hide-scrollbar w-full">
         <button
           onClick={() => setActiveTab('users')}
-          className={`flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${activeTab === 'users'
+          className={`flex shrink-0 items-center gap-1.5 px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold transition-all ${activeTab === 'users'
             ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)]'
             : 'text-text-dim hover:bg-white/5'
             }`}
@@ -338,7 +338,7 @@ export default function Admin() {
         </button>
         <button
           onClick={() => setActiveTab('config')}
-          className={`flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${activeTab === 'config'
+          className={`flex shrink-0 items-center gap-1.5 px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold transition-all ${activeTab === 'config'
             ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)]'
             : 'text-text-dim hover:bg-white/5'
             }`}
