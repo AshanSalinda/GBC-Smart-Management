@@ -84,7 +84,7 @@ const tablePropsAreEqual = (prevProps, nextProps) => {
 
   return (
     prev.status === next.status &&
-    prev.currentBooking?.bookingId === next.currentBooking?.bookingId &&  // fix: backend field is "bookingId" not "id"
+    prev.currentBooking?.bookingId === next.currentBooking?.bookingId &&
     prev.currentBooking?.checkInTime === next.currentBooking?.checkInTime &&
     prev.currentBooking?.checkOutTime === next.currentBooking?.checkOutTime
   );
@@ -106,7 +106,6 @@ const TableCard = React.memo(({ table, previousStatesRef }) => {
 
   const isBusy = table.status === 'BUSY';
   const tableId = table.tableId;
-  const tableName = table.tableName || `T${tableId}`;
 
   const startTime = isBusy && table.currentBooking?.checkInTime ? new Date(table.currentBooking.checkInTime).getTime() : 0;
   const endTime = isBusy && table.currentBooking?.checkOutTime ? new Date(table.currentBooking.checkOutTime).getTime() : 0;
@@ -159,7 +158,7 @@ const TableCard = React.memo(({ table, previousStatesRef }) => {
         <div className="p-5 md:p-[3.5vh] flex-1 flex flex-col z-10 relative">
           <div className="flex justify-between items-start">
             <h2 className="text-4xl md:text-[6vh] font-display font-black text-white/50 tracking-tighter leading-none drop-shadow-sm">
-              {tableName}
+              {`T${tableId}`}
             </h2>
             <div className="px-3 py-1 md:px-[2vh] md:py-[0.8vh] rounded-full border border-accent/20 bg-accent/10 text-accent shadow-[inset_0_1px_1px_rgba(74,188,109,0.2)] font-bold text-[0.65rem] md:text-[1.5vh] tracking-widest uppercase">
               AVAILABLE
@@ -233,7 +232,7 @@ const TableCard = React.memo(({ table, previousStatesRef }) => {
       <div className="p-5 md:p-[3.5vh] flex-1 flex flex-col z-10 relative">
         <div className="flex justify-between items-start">
           <h2 className="text-4xl md:text-[6vh] font-display font-black text-white/50 tracking-tighter leading-none drop-shadow-sm">
-            {tableName}
+            {`T${tableId}`}
           </h2>
           <div className={`px-3 py-1 md:px-[2vh] md:py-[0.8vh] rounded-full border font-bold text-[0.65rem] md:text-[1.5vh] tracking-widest uppercase ${badgeBg}`}>
             {badgeText}

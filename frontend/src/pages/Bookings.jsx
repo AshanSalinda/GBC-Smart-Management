@@ -23,9 +23,9 @@ const ClockIcon = () => (
   </svg>
 );
 
-const PlusIcon = () => (
+const CheckIcon = () => (
   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
   </svg>
 );
 
@@ -38,7 +38,7 @@ const tablePropsAreEqual = (prevProps, nextProps) => {
 
   return (
     prev.status === next.status &&
-    prev.currentBooking?.id === next.currentBooking?.id &&
+    prev.currentBooking?.bookingId === next.currentBooking?.bookingId &&
     prev.currentBooking?.isPaid === next.currentBooking?.isPaid &&
     prev.currentBooking?.amount === next.currentBooking?.amount
   );
@@ -127,7 +127,7 @@ const TableSummaryCard = React.memo(({ table }) => {
             <div className="relative w-20 h-20 mb-5 flex items-center justify-center">
               <div className="absolute inset-0 rounded-full border-2 border-dashed border-accent/40 group-hover:border-accent/80 group-hover:rotate-90 group-active:border-accent/80 group-active:rotate-90 transition duration-700" />
               <div className="w-12 h-12 rounded-full bg-accent/10 border border-accent/20 text-accent flex items-center justify-center group-hover:scale-110 group-active:scale-110 transition-transform duration-500 shadow-lg">
-                <PlusIcon />
+                <CheckIcon />
               </div>
             </div>
             <h3 className="text-3xl font-display font-black text-white/90 tracking-tighter mb-1">{tableName}</h3>
@@ -144,19 +144,63 @@ const TableSummaryCard = React.memo(({ table }) => {
 // Main Component
 // -----------------------------------------------------------------------------
 export default function Bookings() {
-  const tables = useStore(state => state.tables);
-  const rawTimeline = useStore(state => state.timeline) || [];
-  const globalConfig = useStore(state => state.globalConfig);
-  const setGlobalConfig = useStore(state => state.setGlobalConfig);
+  const todayStr = React.useMemo(() => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().split('T')[0];
+  }, []);
 
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [editingBooking, setEditingBooking] = useState(null);
   const [showTimeline, setShowTimeline] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(todayStr);
+  const [fetchedTimeline, setFetchedTimeline] = useState([]);
+  const [isFetchingTimeline, setIsFetchingTimeline] = useState(false);
+
+  const isTodaySelected = selectedDate === todayStr;
+
+  // Conditionally subscribe to store timeline ONLY when viewing today.
+  // This prevents unnecessary re-renders when historical dates are selected but the live timeline updates.
+  const rawTimeline = useStore(state => isTodaySelected ? state.timeline : null);
+  const tables = useStore(state => state.tables);
+  const globalConfig = useStore(state => state.globalConfig);
+  const setGlobalConfig = useStore(state => state.setGlobalConfig);
+
+
+
+  useEffect(() => {
+    if (isTodaySelected) {
+      return;
+    }
+
+    let isMounted = true;
+    const fetchTimeline = async () => {
+      setIsFetchingTimeline(true);
+      try {
+        const { getTimelineByDate } = await import('../api/bookings');
+        const data = await getTimelineByDate(selectedDate);
+        if (isMounted) {
+          setFetchedTimeline(data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch timeline:', err);
+        if (isMounted) setFetchedTimeline([]);
+      } finally {
+        if (isMounted) setIsFetchingTimeline(false);
+      }
+    };
+    fetchTimeline();
+
+    return () => { isMounted = false; };
+  }, [selectedDate, isTodaySelected]);
+
+  // Determine which timeline to use
+  const activeRawTimeline = isTodaySelected ? rawTimeline : fetchedTimeline;
 
   // Map backend timeline to UI shape
   const timelineBookings = React.useMemo(() => {
-    return rawTimeline.map(b => ({
-      id: b.id,
+    return activeRawTimeline.map(b => ({
+      bookingId: b.id,
       tableId: b.tableId,
       player: b.bookerName || 'Unknown',
       mobile: b.bookerMobile || '',
@@ -165,7 +209,7 @@ export default function Bookings() {
       amount: b.amount || 0,
       paid: !!b.isPaid
     }));
-  }, [rawTimeline]);
+  }, [activeRawTimeline]);
 
   // Fetch Global Config once on mount
   useEffect(() => {
@@ -205,7 +249,7 @@ export default function Bookings() {
 
   const handleUpdateBooking = async (updatedData) => {
     try {
-      await updateBooking(editingBooking.id, updatedData);
+      await updateBooking(editingBooking.bookingId, updatedData);
       setEditingBooking(null);
     } catch (e) {
       console.error("Failed to update booking:", e);
@@ -250,13 +294,16 @@ export default function Bookings() {
       </div>
 
       {/* Interactive Booking Timeline */}
-      {showTimeline ? (
+      {showTimeline && !isFetchingTimeline ? (
         <BookingTimeline
           tables={tables.length > 0 ? tables : [{ tableId: 1 }, { tableId: 2 }, { tableId: 3 }, { tableId: 4 }]} // Fallback for timeline layout structure mapping
           bookings={timelineBookings}
           onSlotClick={setSelectedSlot}
           onEditBooking={setEditingBooking}
           globalConfig={globalConfig}
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+          today={todayStr}
         />
       ) : (
         <div className="h-[400px] w-full rounded-[16px] border border-[#2a2a2e] flex flex-col items-center justify-center bg-[#151517] shadow-xl mt-4 animate-pulse">

@@ -29,7 +29,7 @@ export default function BookingBlock({ booking, onEditBooking, openHour }) {
     if (isUpdating) return;
     try {
       setIsUpdating(true);
-      await updateBooking(booking.id, {
+      await updateBooking(booking.bookingId, {
         paid: !isPaid
       });
       // Assuming parent re-fetches or socket updates the state, otherwise we might need to rely on that.
@@ -45,7 +45,7 @@ export default function BookingBlock({ booking, onEditBooking, openHour }) {
     if (isUpdating || booking.startTime < Date.now()) return;
     try {
       setIsUpdating(true);
-      await cancelBooking(booking.id);
+      await cancelBooking(booking.bookingId);
       setShowModal(false);
     } catch (err) {
       console.error('Failed to cancel booking', err);
