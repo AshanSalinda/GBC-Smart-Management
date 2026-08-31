@@ -286,7 +286,7 @@ func (s *BookingService) CancelBooking(id string) (*domain.Booking, error) {
 // ─── Private Helpers ──────────────────────────────────────────────────────────
 
 func (s *BookingService) emitTimelineUpdate() {
-	tl, err := s.GetTimeline(time.Now().UTC().Format("2006-01-02"))
+	tl, err := s.GetTimeline(timeutil.TodayVenueString())
 	if err != nil {
 		s.logger.Error("failed to fetch timeline", "err", err)
 		return
