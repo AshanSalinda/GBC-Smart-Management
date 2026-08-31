@@ -56,7 +56,7 @@ export default function TimelineRow({ table, width, bookings = [], isLast, close
     <div className={`relative h-[92px] flex items-center ${isLast ? '' : 'border-b border-[#2a2a2e]'}`} style={{ width: `${width}px` }}>
       {/* Existing Bookings */}
       {bookings.map((b) => (
-        <BookingBlock key={b.id} booking={b} onEditBooking={onEditBooking} openHour={openHour} />
+        <BookingBlock key={b.bookingId} booking={b} onEditBooking={onEditBooking} openHour={openHour} />
       ))}
 
       {/* Free Slots */}

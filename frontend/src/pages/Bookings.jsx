@@ -38,7 +38,7 @@ const tablePropsAreEqual = (prevProps, nextProps) => {
 
   return (
     prev.status === next.status &&
-    prev.currentBooking?.id === next.currentBooking?.id &&
+    prev.currentBooking?.bookingId === next.currentBooking?.bookingId &&
     prev.currentBooking?.isPaid === next.currentBooking?.isPaid &&
     prev.currentBooking?.amount === next.currentBooking?.amount
   );
@@ -156,7 +156,7 @@ export default function Bookings() {
   // Map backend timeline to UI shape
   const timelineBookings = React.useMemo(() => {
     return rawTimeline.map(b => ({
-      id: b.id,
+      bookingId: b.id,
       tableId: b.tableId,
       player: b.bookerName || 'Unknown',
       mobile: b.bookerMobile || '',
@@ -205,7 +205,7 @@ export default function Bookings() {
 
   const handleUpdateBooking = async (updatedData) => {
     try {
-      await updateBooking(editingBooking.id, updatedData);
+      await updateBooking(editingBooking.bookingId, updatedData);
       setEditingBooking(null);
     } catch (e) {
       console.error("Failed to update booking:", e);
