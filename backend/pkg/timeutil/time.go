@@ -7,6 +7,10 @@
 // defaults to "Asia/Colombo") and then returned as UTC time.Time values so that
 // MongoDB range queries and Go time comparisons work correctly regardless of
 // where the server binary is deployed.
+//
+// The blank import of "time/tzdata" embeds the full IANA timezone database directly
+// into the binary. This ensures timezone lookups work on minimal container images
+// (Alpine, scratch, distroless) that have no OS-level tzdata package installed.
 package timeutil
 
 import (
@@ -16,7 +20,13 @@ import (
 	"strings"
 	"sync"
 	"time"
+	_ "time/tzdata" // embed IANA timezone DB into the binary
 )
+
+// colomboFallback is UTC+5:30 expressed as a fixed-offset zone.
+// It is used when time.LoadLocation fails (should not happen after tzdata embed,
+// but kept as a last-resort safety net so the server never panics).
+var colomboFallback = time.FixedZone("Asia/Colombo", 5*60*60+30*60)
 
 // DayBounds holds the inclusive start and exclusive end of one operational day,
 // expressed in UTC so they are safe to use in MongoDB queries and time.Before/After calls.
@@ -28,13 +38,19 @@ type DayBounds struct {
 // venueLocation is lazily loaded from the VENUE_TIMEZONE environment variable.
 // All access is guarded by locationOnce so it is goroutine-safe.
 var (
-	locationOnce sync.Once
+	locationOnce  sync.Once
 	venueLocation *time.Location
 )
 
 // VenueLocation returns the venue's *time.Location.
 // It reads VENUE_TIMEZONE once and caches the result for the lifetime of the process.
-// Falls back to "Asia/Colombo" if the variable is unset or invalid.
+//
+// Resolution order:
+//  1. VENUE_TIMEZONE env var (any valid IANA name, e.g. "Asia/Colombo")
+//  2. Hardcoded UTC+5:30 fixed-offset zone as an absolute fallback
+//
+// The embedded tzdata (time/tzdata import) ensures LoadLocation works even on
+// minimal container images without an OS-level timezone database.
 func VenueLocation() *time.Location {
 	locationOnce.Do(func() {
 		tz := os.Getenv("VENUE_TIMEZONE")
@@ -43,9 +59,9 @@ func VenueLocation() *time.Location {
 		}
 		loc, err := time.LoadLocation(tz)
 		if err != nil {
-			// Warn loudly and fall back so the server still starts.
-			fmt.Printf("[timeutil] WARNING: invalid VENUE_TIMEZONE %q (%v) — falling back to Asia/Colombo\n", tz, err)
-			loc, _ = time.LoadLocation("Asia/Colombo")
+			// Should never happen after tzdata embed, but guard anyway.
+			fmt.Printf("[timeutil] WARNING: cannot load timezone %q (%v) — using fixed UTC+5:30\n", tz, err)
+			loc = colomboFallback
 		}
 		venueLocation = loc
 	})
