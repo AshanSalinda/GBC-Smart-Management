@@ -50,12 +50,14 @@ func (h *UserHandler) ListUsers(c *fiber.Ctx) error {
 			role, _ = u.CustomClaims["role"].(string)
 		}
 		users = append(users, fiber.Map{
-			"uid":         u.UID,
-			"email":       u.Email,
-			"displayName": u.DisplayName,
-			"photoURL":    u.PhotoURL,
-			"disabled":    u.Disabled,
-			"role":        role,
+			"uid":             u.UID,
+			"email":           u.Email,
+			"displayName":     u.DisplayName,
+			"photoURL":        u.PhotoURL,
+			"disabled":        u.Disabled,
+			"role":            role,
+			"creationTime":    u.UserMetadata.CreationTimestamp,  // Unix ms from Firebase
+			"lastSignInTime":  u.UserMetadata.LastLogInTimestamp, // Unix ms from Firebase
 		})
 		count++
 	}
