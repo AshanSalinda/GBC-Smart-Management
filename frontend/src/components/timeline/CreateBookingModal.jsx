@@ -182,6 +182,11 @@ export default function CreateBookingModal({ isOpen, onClose, slot, existingBook
       checkOutMs += 24 * 3600000;
     }
 
+    const durMins = (checkOutMs - checkInMs) / 60000;
+    if (durMins < 15) {
+      return setError(`Minimum booking duration is 15 minutes.`);
+    }
+
     if (existingBooking) {
       // Edit Mode: Check for overlaps against other bookings
       const overlappingBooking = tableBookings.find(b => {
