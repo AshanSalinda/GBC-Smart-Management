@@ -3,27 +3,15 @@ import TimelineRow from './TimelineRow';
 import CurrentTimeLine from './CurrentTimeLine';
 import { getTimelineHeaders, getTotalTimelineWidth, TIMELINE_CONFIG, getDynamicCloseHour } from './timelineUtils';
 
-export default function BookingTimeline({ tables, bookings = [], onSlotClick, onEditBooking, globalConfig, selectedDate, onDateChange }) {
+export default function BookingTimeline({ tables, bookings = [], onSlotClick, onEditBooking, globalConfig, selectedDate, onDateChange, today }) {
   const scrollContainerRef = useRef(null);
   const dateInputRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(Date.now());
 
-  // Get today's date in local YYYY-MM-DD format
-  const todayLocal = useMemo(() => {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().split('T')[0];
-  }, []);
-
   const handleDateChange = useCallback((val) => {
-    if (onDateChange) {
-      if (val) {
-        onDateChange(val);
-      } else {
-        onDateChange(todayLocal);
-      }
-    }
-  }, [onDateChange, todayLocal]);
+    if (!onDateChange) return;
+    onDateChange(val ? val : today);
+  }, [onDateChange, today]);
 
   // Parse Config
   const openHour = globalConfig?.venueStartTime ? parseInt(globalConfig.venueStartTime.split(':')[0], 10) : 10;
@@ -98,8 +86,8 @@ export default function BookingTimeline({ tables, bookings = [], onSlotClick, on
           <input
             ref={dateInputRef}
             type="date"
-            value={selectedDate || todayLocal}
-            min={todayLocal}
+            value={selectedDate || today}
+            min={today}
             onChange={(e) => handleDateChange(e.target.value)}
             onClick={(e) => e.stopPropagation()}
             className="bg-transparent text-[0.9rem] font-medium text-white outline-none z-10 relative cursor-pointer [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:hidden w-full"
