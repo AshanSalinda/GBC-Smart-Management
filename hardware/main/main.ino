@@ -114,7 +114,7 @@ namespace Hardware {
     }
 
     pinMode(NETWORK_INDICATOR_PIN, OUTPUT);
-    digitalWrite(NETWORK_INDICATOR_PIN, LOW);
+    digitalWrite(NETWORK_INDICATOR_PIN, HIGH);
   }
 
   void setImmediate(int id, bool isOn) {
@@ -151,7 +151,7 @@ namespace Hardware {
     if (indicatorState != NET_ONLINE || winkPending) return;
     winkPending = true;
     winkEndTime = millis() + 100;
-    digitalWrite(NETWORK_INDICATOR_PIN, LOW);
+    digitalWrite(NETWORK_INDICATOR_PIN, HIGH);
   }
 
   void update() {
@@ -183,8 +183,8 @@ namespace Hardware {
     if (desired != indicatorState) {
       winkPending = false;
       indicatorState = desired;
-      if (indicatorState == NET_DISCONNECTED) digitalWrite(NETWORK_INDICATOR_PIN, LOW);
-      if (indicatorState == NET_ONLINE)  digitalWrite(NETWORK_INDICATOR_PIN, HIGH);
+      if (indicatorState == NET_DISCONNECTED) digitalWrite(NETWORK_INDICATOR_PIN, HIGH);
+      if (indicatorState == NET_ONLINE)       digitalWrite(NETWORK_INDICATOR_PIN, LOW);
     }
 
     // Double pulse
@@ -198,7 +198,7 @@ namespace Hardware {
     if (winkPending && currentMillis >= winkEndTime) {
       winkPending = false;
       if (indicatorState == NET_ONLINE) {
-        digitalWrite(NETWORK_INDICATOR_PIN, HIGH);
+        digitalWrite(NETWORK_INDICATOR_PIN, LOW);
       }
     }
   }
