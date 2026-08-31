@@ -80,7 +80,7 @@ export default function App() {
                 }
               />
               <Route
-                path="/health"
+                path="/hardware"
                 element={
                   <ProtectedRoute allowedRoles={['staff', 'admin']}>
                     <HardwareStatus />
