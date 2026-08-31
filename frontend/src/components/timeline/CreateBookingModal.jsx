@@ -16,12 +16,35 @@ export default function CreateBookingModal({ isOpen, onClose, slot, existingBook
   const [form, setForm] = useState({
     checkIn: '',
     checkOut: '',
-    durationStr: '1',
+    durationText: '1h',
     player: '',
     mobile: '',
     amount: '',
     isPaid: false
   });
+
+  const formatDurationMins = (mins) => {
+    if (!mins || isNaN(mins)) return '';
+    const h = Math.floor(mins / 60);
+    const m = Math.round(mins % 60);
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
+  };
+
+  const parseDurationToMins = (text) => {
+    if (!text) return 0;
+    const cleanText = String(text).trim().toLowerCase();
+    if (/^\d*\.?\d+$/.test(cleanText)) {
+      return parseFloat(cleanText) * 60; // Assume hours if just a number
+    }
+    let mins = 0;
+    const hMatch = cleanText.match(/(\d*\.?\d+)\s*h/);
+    const mMatch = cleanText.match(/(\d*\.?\d+)\s*m/);
+    if (hMatch) mins += parseFloat(hMatch[1]) * 60;
+    if (mMatch) mins += parseFloat(mMatch[1]);
+    return mins;
+  };
 
   useEffect(() => {
     setError('');
@@ -35,7 +58,7 @@ export default function CreateBookingModal({ isOpen, onClose, slot, existingBook
       setForm({
         checkIn: formatTimeForInput(startMs),
         checkOut: formatTimeForInput(endMs),
-        durationStr: (durationMs / 3600000).toFixed(2).replace(/\.00$/, ''),
+        durationText: formatDurationMins(durationMs / 60000),
         player: existingBooking.player || '',
         mobile: existingBooking.mobile || '',
         amount: String(existingBooking.amount || 0),
@@ -50,7 +73,7 @@ export default function CreateBookingModal({ isOpen, onClose, slot, existingBook
       setForm({
         checkIn: formatTimeForInput(startMs),
         checkOut: formatTimeForInput(endMs),
-        durationStr: '1',
+        durationText: '1h',
         player: '',
         mobile: '',
         amount: String(HOURLY_RATE),
@@ -86,9 +109,9 @@ export default function CreateBookingModal({ isOpen, onClose, slot, existingBook
   const handleCheckInChange = (val) => {
     const newCheckInMs = parseTimeFromInput(val, getBaseMs());
 
-    const durHours = parseFloat(form.durationStr);
-    if (!isNaN(durHours) && durHours > 0) {
-      const newCheckOutMs = newCheckInMs + (durHours * 3600000);
+    const durMins = parseDurationToMins(form.durationText);
+    if (durMins > 0) {
+      const newCheckOutMs = newCheckInMs + (durMins * 60000);
       setForm(prev => ({
         ...prev,
         checkIn: val,
@@ -100,17 +123,24 @@ export default function CreateBookingModal({ isOpen, onClose, slot, existingBook
   };
 
   const handleDurationChange = (val) => {
-    const durHours = parseFloat(val);
-    setForm(prev => ({ ...prev, durationStr: val }));
+    setForm(prev => ({ ...prev, durationText: val }));
+    const durMins = parseDurationToMins(val);
 
-    if (!isNaN(durHours) && durHours > 0 && form.checkIn) {
+    if (durMins > 0 && form.checkIn) {
       const checkInMs = parseTimeFromInput(form.checkIn, getBaseMs());
-      const newCheckOutMs = checkInMs + (durHours * 3600000);
+      const newCheckOutMs = checkInMs + (durMins * 60000);
       setForm(prev => ({
         ...prev,
         checkOut: formatTimeForInput(newCheckOutMs),
-        amount: String(durHours * HOURLY_RATE)
+        amount: String(((durMins / 60) * HOURLY_RATE).toFixed(2))
       }));
+    }
+  };
+
+  const handleDurationBlur = () => {
+    const durMins = parseDurationToMins(form.durationText);
+    if (durMins > 0) {
+      setForm(prev => ({ ...prev, durationText: formatDurationMins(durMins) }));
     }
   };
 
@@ -125,12 +155,12 @@ export default function CreateBookingModal({ isOpen, onClose, slot, existingBook
         diffMs += 24 * 3600000;
       }
 
-      const durHours = diffMs / 3600000;
+      const durMins = diffMs / 60000;
       setForm(prev => ({
         ...prev,
         checkOut: val,
-        durationStr: durHours.toFixed(2).replace(/\.00$/, ''),
-        amount: String(durHours * HOURLY_RATE)
+        durationText: formatDurationMins(durMins),
+        amount: String(((durMins / 60) * HOURLY_RATE).toFixed(2))
       }));
     } else {
       setForm(prev => ({ ...prev, checkOut: val }));
@@ -195,14 +225,14 @@ export default function CreateBookingModal({ isOpen, onClose, slot, existingBook
 
   const handleConfirm = () => {
     const checkInMs = parseTimeFromInput(form.checkIn, getBaseMs());
-    const durHours = parseFloat(form.durationStr) || 1;
+    const durMins = parseDurationToMins(form.durationText) || 60;
 
     onConfirm({
       tableId: existingBooking ? existingBooking.tableId : slot?.tableId,
       player: form.player,
       mobile: form.mobile,
       startTime: checkInMs,
-      duration: durHours * 3600000,
+      duration: durMins * 60000,
       amount: parseFloat(form.amount) || 0,
       paid: form.isPaid
     });
@@ -249,30 +279,29 @@ export default function CreateBookingModal({ isOpen, onClose, slot, existingBook
 
             {/* Duration */}
             <div>
-              <label className={labelBase}>Duration (Hours)</label>
+              <label className={labelBase}>Duration</label>
               <div className="flex gap-2 mb-2">
-                {['0.5', '1', '1.5', '2'].map(d => (
+                {[{label: '30m', val: '30m'}, {label: '1h', val: '1h'}, {label: '1.5h', val: '1h 30m'}, {label: '2h', val: '2h'}].map(d => (
                   <button
-                    key={d}
+                    key={d.label}
                     type="button"
-                    onClick={() => handleDurationChange(d)}
-                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${form.durationStr === d
+                    onClick={() => handleDurationChange(d.val)}
+                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${form.durationText === d.val
                       ? 'bg-accent/20 text-accent border border-accent/50'
                       : 'bg-white/5 text-text-dim border border-transparent hover:bg-white/10'
                       }`}
                   >
-                    {d}h
+                    {d.label}
                   </button>
                 ))}
               </div>
               <input
-                type="number"
-                step="any"
-                min="0.25"
-                value={form.durationStr}
+                type="text"
+                value={form.durationText}
                 onChange={(e) => handleDurationChange(e.target.value)}
+                onBlur={handleDurationBlur}
                 className={inputBase}
-                placeholder="Custom Duration"
+                placeholder="E.g. 1h 15m or 1.5"
               />
             </div>
 
@@ -381,7 +410,7 @@ export default function CreateBookingModal({ isOpen, onClose, slot, existingBook
                 <span className="text-text-dim text-sm font-bold">Time</span>
                 <div className="text-right">
                   <div className="text-white font-bold">{form.checkIn} &rarr; {form.checkOut}</div>
-                  <div className="text-accent text-sm font-bold mt-0.5">{form.durationStr} Hours</div>
+                  <div className="text-accent text-sm font-bold mt-0.5">{form.durationText}</div>
                 </div>
               </div>
               <div className="flex justify-between items-center pt-2">
