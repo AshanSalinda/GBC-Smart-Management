@@ -51,9 +51,9 @@ function HeaderClock({ isConnected }) {
   return (
     <header className="px-4 py-4 md:px-[4vw] md:py-[2vh] flex items-center justify-between border-b border-white/5 bg-black backdrop-blur-md flex-shrink-0 z-20 shadow-lg">
       <div className="flex items-center gap-3 md:gap-[1vw]">
-        <img 
-          src="/logo.jpg" 
-          alt="GBC Logo" 
+        <img
+          src="/logo.jpg"
+          alt="GBC Logo"
           className="w-10 h-10 md:w-[8vh] md:h-[8vh] object-cover rounded-xl md:rounded-[1.5vh] shadow-[0_0_2vh_rgba(255,255,255,0.1)]"
         />
         <div>
@@ -172,10 +172,10 @@ const TableCard = React.memo(({ table, previousStatesRef }) => {
               <div className="w-6 h-6 md:w-[4vh] md:h-[4vh] rounded-full bg-accent/40 animate-pulse blur-sm md:blur-[0.3vh]" />
             </div>
             <h3 className="text-2xl md:text-[4vh] font-display font-light text-white/80 tracking-widest uppercase mb-2 md:mb-[1vh] drop-shadow-md">
-              Ready to Play
+              Table Available
             </h3>
             <p className="text-accent/80 text-xs md:text-[1.8vh] font-medium tracking-widest uppercase max-w-[90%] md:max-w-[80%] leading-relaxed">
-              Please visit the front desk to start a session
+              Please visit the reception to start a session
             </p>
           </div>
         </div>
@@ -243,7 +243,7 @@ const TableCard = React.memo(({ table, previousStatesRef }) => {
 
         <div className="flex-1 flex flex-col justify-center items-center text-center py-6 md:py-0">
           <p className={`text-xs md:text-[1.8vh] font-bold uppercase tracking-widest mb-1 md:mb-[0.5vh] ${isEnded || isFinalMinutes ? 'text-danger' : 'text-text-dim'}`}>
-            {isEnded ? 'Overdue By' : 'Time Left'}
+            {isEnded ? 'Session Ended' : 'Time Remaining'}
           </p>
           <p className={`text-6xl md:text-[12vh] font-display font-medium tracking-tight leading-none tabular-nums ${timerColor} mt-2 md:mt-[1vh]`}>
             {isEnded ? '00:00:00' : formatTimeRemaining(startTime, duration, now)}
@@ -297,17 +297,17 @@ export default function TvDisplay() {
   if (!isStarted) {
     return (
       <div className="h-screen w-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-6 text-center">
-        <h1 className="text-[6vh] font-display font-black text-white tracking-tighter mb-[4vh]">
-          TV Display Ready
+        <h1 className="text-[6vh] font-display font-black text-white tracking-wide mb-[4vh]">
+          LIVE COUNTDOWN
         </h1>
         <p className="text-text-dim text-[2vh] max-w-lg mb-[6vh]">
-          Click the button below to initialize the audio engine and enter full-screen mode.
+          Please tap below to start the live status board and enter full-screen mode.
         </p>
         <button
           onClick={handleStart}
           className="px-[6vh] py-[3vh] bg-accent/20 border-2 border-accent/40 text-accent font-display text-[3vh] font-bold rounded-[3vh] hover:bg-accent/30 transition-colors shadow-[0_0_4vh_rgba(74,188,109,0.3)] animate-pulse"
         >
-          Tap to Start Display
+          Start Live Display
         </button>
       </div>
     );
