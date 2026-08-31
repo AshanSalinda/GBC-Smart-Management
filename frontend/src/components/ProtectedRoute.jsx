@@ -1,18 +1,29 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function ProtectedRoute({ children, allowedRoles }) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user && (!user.role || user.role === '')) {
+      const email = user.email;
+      logout().then(() => {
+        navigate('/pending-approval', { replace: true, state: { email } });
+      });
+    }
+  }, [user, logout, navigate]);
 
   if (!user) {
     // Redirect unauthenticated requests to /login
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Restrict non-role-assigned or empty claims accounts
+  // Prevent rendering protected content while the useEffect is logging them out
   if (!user.role || user.role === '') {
-    return <Navigate to="/pending-approval" replace />;
+    return null; 
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
