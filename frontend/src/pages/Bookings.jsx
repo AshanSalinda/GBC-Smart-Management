@@ -303,7 +303,6 @@ export default function Bookings() {
           globalConfig={globalConfig}
           selectedDate={selectedDate}
           onDateChange={setSelectedDate}
-          today={todayStr}
         />
       ) : (
         <div className="h-[400px] w-full rounded-[16px] border border-[#2a2a2e] flex flex-col items-center justify-center bg-[#151517] shadow-xl mt-4 animate-pulse">
